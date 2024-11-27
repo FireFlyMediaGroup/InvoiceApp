@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import POWRAForm from '@/app/components/POWRAForm';
-import POWRAList from '@/app/components/POWRAList';
+import POWRAForm from "@/app/components/POWRAForm";
+import POWRAList from "@/app/components/POWRAList";
 import { Button } from "@/components/ui/button";
 
 export default function POWRAPage() {

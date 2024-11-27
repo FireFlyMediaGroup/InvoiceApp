@@ -29,7 +29,7 @@ type POWRAFormProps = {
   onClose: () => void;
 };
 
-const POWRAForm = ({ powraId, onClose }: POWRAFormProps) => {
+export default function POWRAForm({ powraId, onClose }: POWRAFormProps) {
   const [formData, setFormData] = useState<POWRAFormData>({
     status: 'DRAFT',
     headerFields: {},
@@ -221,6 +221,4 @@ const POWRAForm = ({ powraId, onClose }: POWRAFormProps) => {
       </div>
     </form>
   );
-};
-
-export default POWRAForm;
+}

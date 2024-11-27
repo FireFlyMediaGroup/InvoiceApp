@@ -24,7 +24,7 @@ type POWRAListProps = {
   onEdit: (id: string) => void;
 };
 
-const POWRAList = ({ onEdit }: POWRAListProps) => {
+export default function POWRAList({ onEdit }: POWRAListProps) {
   const [powras, setPowras] = useState<POWRA[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -125,6 +125,4 @@ const POWRAList = ({ onEdit }: POWRAListProps) => {
       </TableBody>
     </Table>
   );
-};
-
-export default POWRAList;
+}

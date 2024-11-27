@@ -20,6 +20,7 @@ model User {
   sessions      Session[]
   Authenticator Authenticator[]
   invoices      Invoice[]
+  powras        POWRA[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -110,4 +111,23 @@ model Invoice {
 enum InvoiceStatus {
   PAID
   PENDING
+}
+
+enum POWRAStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+}
+
+model POWRA {
+  id                  String      @id @default(uuid())
+  status             POWRAStatus @default(DRAFT)
+  headerFields       Json
+  beforeStartChecklist Json
+  controlMeasures    Json
+  reviewComments     String?
+  userId             String
+  user               User        @relation(fields: [userId], references: [id])
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 }

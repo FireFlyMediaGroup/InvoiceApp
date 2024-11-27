@@ -1,11 +1,8 @@
-interface iAppProps {
-  amount: number;
-  currency: "USD" | "EUR";
-}
+import type { CurrencyAmount } from "./types";
 
-export function formatCurrency({ amount, currency }: iAppProps) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency,
-  }).format(amount);
+export function formatCurrency({ amount, currency }: CurrencyAmount) {
+	return new Intl.NumberFormat("en-US", {
+		style: "currency",
+		currency: currency,
+	}).format(amount);
 }

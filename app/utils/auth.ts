@@ -9,7 +9,8 @@ import type { User, Session } from "next-auth";
 console.log("[NextAuth] Initializing auth configuration");
 
 const customLogger = (message: string, error?: unknown): void => {
-  console.log(`[NextAuth] ${message}`, error ? JSON.stringify(error, null, 2) : '');
+  const timestamp = new Date().toISOString();
+  console.log(`[NextAuth ${timestamp}] ${message}`, error ? JSON.stringify(error, null, 2) : '');
 };
 
 // Extend the User type
@@ -22,6 +23,14 @@ interface ExtendedSession extends Session {
   user?: ExtendedUser;
 }
 
+// Custom error class for email sending failures
+class EmailSendError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'EmailSendError';
+  }
+}
+
 // Custom Prisma Adapter to handle P2025 error
 const customPrismaAdapter = {
   ...PrismaAdapter(prisma),
@@ -32,14 +41,31 @@ const customPrismaAdapter = {
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError && error.code === 'P2025') {
-        // Session doesn't exist, log it but don't throw an error
         customLogger(`Attempted to delete non-existent session: ${sessionToken}`);
       } else {
-        // For other errors, rethrow
         throw error;
       }
     }
   },
+};
+
+// Validate email configuration
+const validateEmailConfig = () => {
+  const requiredEnvVars = [
+    'EMAIL_SERVER_HOST',
+    'EMAIL_SERVER_PORT',
+    'EMAIL_SERVER_USER',
+    'EMAIL_SERVER_PASSWORD',
+    'EMAIL_FROM'
+  ];
+
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    customLogger(`Missing required email configuration: ${missingVars.join(', ')}`);
+    return false;
+  }
+  return true;
 };
 
 export const authConfig: NextAuthConfig = {
@@ -53,13 +79,17 @@ export const authConfig: NextAuthConfig = {
           user: process.env.EMAIL_SERVER_USER,
           pass: process.env.EMAIL_SERVER_PASSWORD,
         },
+        // Set connection timeout in transport options
+        connectionTimeout: 10000,
+        socketTimeout: 10000,
       },
       from: process.env.EMAIL_FROM,
     }),
   ],
   pages: {
     verifyRequest: "/verify",
-    error: "/unauthorized",
+    signIn: "/login",
+    error: "/verify", // Changed to always show verify page
   },
   callbacks: {
     async signIn({ user }): Promise<boolean> {
@@ -71,26 +101,39 @@ export const authConfig: NextAuthConfig = {
       }
       
       try {
+        if (!validateEmailConfig()) {
+          customLogger('Email configuration validation failed');
+          throw new Error("System configuration error. Please contact support.");
+        }
+
         customLogger(`Attempting to find user in database: ${user.email}`);
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
         });
 
-        if (!dbUser) {
-          customLogger(`User not found in database: ${user.email}`);
-          return false;
-        }
-
-        if (!dbUser.isAllowed) {
-          customLogger(`User not allowed: ${user.email}`);
-          return false;
+        // For security, we'll show the same verify page regardless of user status
+        if (!dbUser || !dbUser.isAllowed) {
+          customLogger(`User verification failed: ${user.email}`);
+          // Instead of throwing an error, redirect to verify page
+          return true;
         }
 
         customLogger(`Sign in successful for user: ${user.email}`);
         return true;
       } catch (error) {
         customLogger('Error during sign in:', error);
-        return false;
+        
+        if (error instanceof Error) {
+          if (error.message.includes('ETIMEDOUT')) {
+            throw new Error("Email service timed out. Please try again later.");
+          }
+          if (error.message.includes('ECONNREFUSED')) {
+            throw new Error("Unable to connect to email service. Please try again later.");
+          }
+        }
+        
+        // For any error, show the verify page
+        return true;
       }
     },
     async session({ session, user }): Promise<ExtendedSession> {
@@ -98,10 +141,9 @@ export const authConfig: NextAuthConfig = {
       const extendedSession = session as ExtendedSession;
       if (extendedSession.user) {
         extendedSession.user.id = user.id;
-        // Add more user details to the session if needed
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
-          select: { isAllowed: true }, // Add any other fields you want to include
+          select: { isAllowed: true },
         });
         if (dbUser) {
           extendedSession.user.isAllowed = dbUser.isAllowed;

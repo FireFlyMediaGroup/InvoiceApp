@@ -13,6 +13,10 @@ import { auth, signIn } from "../utils/auth";
 import { SubmitButton } from "../components/SubmitButtons";
 import { redirect } from "next/navigation";
 
+interface LoginState {
+  message?: string;
+}
+
 export default async function Login() {
   const session = await auth();
 
@@ -29,19 +33,25 @@ export default async function Login() {
     try {
       await signIn("nodemailer", formData);
       console.log(`[Login] Login link sent successfully for email: ${email}`);
-      // Redirect to a page informing the user to check their email
       redirect("/check-email");
     } catch (error: unknown) {
       if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
         console.log(`[Login] Redirecting after successful login for email: ${email}`);
-        // Allow the redirect to happen
         throw error;
       }
       
       console.error(`[Login] Error during login for email: ${email}`, error);
-      // Here you might want to set some state to show an error message to the user
-      // For now, we'll just throw a new error
-      throw new Error("Login failed. Please try again.");
+      
+      if (error instanceof Error) {
+        if (error.message.includes("User not found")) {
+          throw new Error("Account not found. Please contact your administrator.");
+        }
+        if (error.message.includes("not allowed")) {
+          throw new Error("Your account is not activated. Please contact your administrator.");
+        }
+      }
+      
+      throw new Error("Unable to send login link. Please try again later.");
     }
   }
 

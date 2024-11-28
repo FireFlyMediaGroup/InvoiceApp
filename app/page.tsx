@@ -3,8 +3,10 @@ import { Navbar } from './components/Navbar';
 
 export default function Home() {
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <Navbar />
+    <main className="relative w-full h-screen overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 z-50">
+        <Navbar />
+      </div>
       <Hero />
     </main>
   );

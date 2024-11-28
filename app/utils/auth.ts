@@ -1,7 +1,8 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
-import Nodemailer from "next-auth/providers/nodemailer";
+import NodemailerProvider from "next-auth/providers/nodemailer";
+import nodemailer from "nodemailer"; // Correct import for nodemailer
 import prisma from "./db";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import type { User, Session } from "next-auth";
@@ -45,7 +46,7 @@ const customPrismaAdapter = {
 export const authConfig: NextAuthConfig = {
   adapter: customPrismaAdapter,
   providers: [
-    Nodemailer({
+    NodemailerProvider({
       server: {
         host: process.env.EMAIL_SERVER_HOST,
         port: Number(process.env.EMAIL_SERVER_PORT),
@@ -55,6 +56,29 @@ export const authConfig: NextAuthConfig = {
         },
       },
       from: process.env.EMAIL_FROM,
+      async sendVerificationRequest({ identifier, url, provider }) {
+        // Check if the user is allowed before sending the magic link
+        const dbUser = await prisma.user.findUnique({
+          where: { email: identifier },
+        });
+
+        if (!dbUser || !dbUser.isAllowed) {
+          customLogger(`Magic link not sent: User not authorized (${identifier})`);
+          return; // Do not send the magic link
+        }
+
+        // Send the magic link for authorized users
+        const { host } = new URL(url);
+        const transport = nodemailer.createTransport(provider.server); // Use nodemailer here
+        await transport.sendMail({
+          to: identifier,
+          from: provider.from,
+          subject: `Sign in to ${host}`,
+          text: `Sign in to ${host}\n\n${url}\n\n`,
+          html: `<p>Sign in to <strong>${host}</strong></p><p><a href="${url}">Sign in</a></p>`,
+        });
+        customLogger(`Magic link sent to: ${identifier}`);
+      },
     }),
   ],
   pages: {
@@ -67,7 +91,7 @@ export const authConfig: NextAuthConfig = {
       
       if (!user.email) {
         customLogger('Sign in failed: No email provided');
-        return false;
+        return true; // Always return true to show the verify card
       }
       
       try {
@@ -76,21 +100,16 @@ export const authConfig: NextAuthConfig = {
           where: { email: user.email },
         });
 
-        if (!dbUser) {
-          customLogger(`User not found in database: ${user.email}`);
-          return false;
+        if (!dbUser || !dbUser.isAllowed) {
+          customLogger(`User not authorized: ${user.email}`);
+          return true; // Always return true to show the verify card
         }
 
-        if (!dbUser.isAllowed) {
-          customLogger(`User not allowed: ${user.email}`);
-          return false;
-        }
-
-        customLogger(`Sign in successful for user: ${user.email}`);
+        customLogger(`User authorized: ${user.email}`);
         return true;
       } catch (error) {
         customLogger('Error during sign in:', error);
-        return false;
+        return true; // Always return true to show the verify card
       }
     },
     async session({ session, user }): Promise<ExtendedSession> {

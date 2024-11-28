@@ -1,28 +1,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-
-type ControlMeasure = {
-  id: number;
-  hazardNo: string;
-  measures: string;
-  risk: 'L' | 'M' | 'H';
-};
-
-type POWRAFormData = {
-  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED';
-  headerFields: {
-    [key: string]: string;
-  };
-  beforeStartChecklist: string[];
-  controlMeasures: ControlMeasure[];
-  reviewComments: string;
-};
+import Part1Stop from './POWRAFormParts/Part1Stop';
+import Part2Think from './POWRAFormParts/Part2Think';
+import Part3Act from './POWRAFormParts/Part3Act';
+import Part4Review from './POWRAFormParts/Part4Review';
+import type { POWRAFormData, ControlMeasure } from './POWRAFormParts/POWRAFormData';
 
 type POWRAFormProps = {
   powraId: string | null;
@@ -67,39 +52,6 @@ export default function POWRAForm({ powraId, onClose }: POWRAFormProps) {
     }
   }, [powraId]);
 
-  const handleHeaderFieldChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      headerFields: { ...prev.headerFields, [field]: value },
-    }));
-  };
-
-  const handleChecklistChange = (item: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      beforeStartChecklist: checked
-        ? [...prev.beforeStartChecklist, item]
-        : prev.beforeStartChecklist.filter(i => i !== item),
-    }));
-  };
-
-  const handleControlMeasureChange = (id: number, field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      controlMeasures: prev.controlMeasures.map(measure =>
-        measure.id === id ? { ...measure, [field]: value } : measure
-      ),
-    }));
-  };
-
-  const addControlMeasure = () => {
-    setFormData(prev => ({
-      ...prev,
-      controlMeasures: [...prev.controlMeasures, { id: nextControlMeasureId, hazardNo: '', measures: '', risk: 'L' }],
-    }));
-    setNextControlMeasureId(prev => prev + 1);
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -129,96 +81,50 @@ export default function POWRAForm({ powraId, onClose }: POWRAFormProps) {
     }
   };
 
+  const addControlMeasure = () => {
+    setFormData((prev: POWRAFormData) => ({
+      ...prev,
+      controlMeasures: [...prev.controlMeasures, { id: nextControlMeasureId, hazardNo: '', measures: '', risk: 'L' }],
+    }));
+    setNextControlMeasureId(prev => prev + 1);
+  };
+
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex justify-center items-center h-full">Loading...</div>;
   }
 
   if (error) {
-    return <div className="text-red-500">{error}</div>;
+    return <div className="text-red-500 text-center">{error}</div>;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-          <span className="block sm:inline">{successMessage}</span>
-        </div>
-      )}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold">Header Information</h2>
-        {['Date', 'Location', 'Task Description'].map(field => (
-          <div key={field}>
-            <Label htmlFor={field}>{field}</Label>
-            <Input
-              id={field}
-              value={formData.headerFields[field] || ''}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleHeaderFieldChange(field, e.target.value)}
-            />
-          </div>
-        ))}
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold">Before You Start Checklist</h2>
-        {['Item 1', 'Item 2', 'Item 3'].map(item => (
-          <div key={item} className="flex items-center space-x-2">
-            <Checkbox
-              id={item}
-              checked={formData.beforeStartChecklist.includes(item)}
-              onCheckedChange={(checked: boolean) => handleChecklistChange(item, checked)}
-            />
-            <Label htmlFor={item}>{item}</Label>
-          </div>
-        ))}
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold">Control Measures</h2>
-        {formData.controlMeasures.map((measure) => (
-          <div key={measure.id} className="space-y-2 p-4 border rounded">
-            <Input
-              placeholder="Hazard No."
-              value={measure.hazardNo}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleControlMeasureChange(measure.id, 'hazardNo', e.target.value)}
-            />
-            <Textarea
-              placeholder="Control Measures"
-              value={measure.measures}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleControlMeasureChange(measure.id, 'measures', e.target.value)}
-            />
-            <div className="flex space-x-4">
-              {['L', 'M', 'H'].map((risk) => (
-                <div key={risk} className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id={`risk-${risk}-${measure.id}`}
-                    checked={measure.risk === risk}
-                    onChange={() => handleControlMeasureChange(measure.id, 'risk', risk as 'L' | 'M' | 'H')}
-                  />
-                  <Label htmlFor={`risk-${risk}-${measure.id}`}>{risk}</Label>
-                </div>
-              ))}
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Point of Work Risk Assessment</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+              <span className="block sm:inline">{successMessage}</span>
             </div>
+          )}
+          <Part1Stop formData={formData} setFormData={setFormData} />
+          <Part2Think formData={formData} setFormData={setFormData} />
+          <Part3Act 
+            formData={formData} 
+            setFormData={setFormData} 
+            addControlMeasure={addControlMeasure}
+          />
+          <Part4Review formData={formData} setFormData={setFormData} />
+          <div className="flex justify-end space-x-4">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Submitting...' : (powraId ? 'Update' : 'Submit')} POWRA
+            </Button>
           </div>
-        ))}
-        <Button type="button" onClick={addControlMeasure}>Add Control Measure</Button>
-      </div>
-
-      <div>
-        <Label htmlFor="reviewComments">Review Comments</Label>
-        <Textarea
-          id="reviewComments"
-          value={formData.reviewComments}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData(prev => ({ ...prev, reviewComments: e.target.value }))}
-        />
-      </div>
-
-      <div className="flex justify-end space-x-4">
-        <Button type="button" onClick={onClose}>Cancel</Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? 'Submitting...' : (powraId ? 'Update' : 'Submit')} POWRA
-        </Button>
-      </div>
+        </CardContent>
+      </Card>
     </form>
   );
 }

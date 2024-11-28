@@ -16,25 +16,31 @@ The authentication system uses NextAuth.js with a custom Nodemailer provider for
 ## Authentication Flow
 
 1. **User Attempts Login**
+
    - The user enters their email on the login page (`app/login/page.tsx`).
    - The form submits the email to the NextAuth signIn function.
 
 2. **NextAuth SignIn Process**
+
    - The signIn function in `app/utils/auth.ts` is triggered.
    - It checks if the user exists in the database and if they are allowed to access the application.
 
 3. **Database Check**
+
    - The Prisma client queries the Supabase database to find the user by email.
    - It checks the `isAllowed` field of the user record.
 
 4. **Authorization Decision**
+
    - If the user is found and `isAllowed` is true, the authentication proceeds.
    - If the user is not found or `isAllowed` is false, the user is redirected to the unauthorized page.
 
 5. **Magic Link Sent**
+
    - If authorized, NextAuth sends a magic link to the user's email using Nodemailer.
 
 6. **User Clicks Magic Link**
+
    - The user receives the email and clicks the magic link.
    - NextAuth verifies the link and creates a session for the user.
 
@@ -44,10 +50,11 @@ The authentication system uses NextAuth.js with a custom Nodemailer provider for
 ## Key Functions and Their Roles
 
 ### `signIn` (NextAuth callback in `app/utils/auth.ts`)
+
 ```typescript
 async signIn({ user }) {
   if (!user.email) return false;
-  
+
   const dbUser = await prisma.user.findUnique({
     where: { email: user.email },
   });
@@ -55,18 +62,22 @@ async signIn({ user }) {
   return dbUser?.isAllowed ?? false;
 }
 ```
+
 This function is called during the sign-in process. It checks if the user exists in the Supabase database and if they are allowed to access the application.
 
 ### `auth` (NextAuth function in `app/utils/auth.ts`)
+
 This is the main NextAuth configuration function. It sets up the authentication providers, callbacks, and pages for the authentication process.
 
 ### Login Form Submit Action (`app/login/page.tsx`)
+
 ```typescript
 action={async (formData) => {
   "use server";
   await signIn("nodemailer", formData);
 }}
 ```
+
 This server action is triggered when the login form is submitted. It calls the NextAuth signIn function with the "nodemailer" provider.
 
 ## Database Schema

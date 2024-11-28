@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Email verification functionality
 - New page for unauthorized access (app/unauthorized/page.tsx)
 - New page for email checking (app/check-email/page.tsx)
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - POWRA API route for handling POWRA operations (app/api/powra/route.ts)
 
 ### Changed
+
 - Updated authentication process
 - Improved database utilities
 - Modified Prisma schema
@@ -39,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved error handling and logging in both frontend and backend for POWRA functionality
 
 ### Fixed
+
 - Various bug fixes and improvements in the authentication flow
 - Added "use client" directive to usePOWRAForm.ts to resolve build error related to useState hook usage
 - Corrected import paths in POWRAForm component to resolve module not found errors
@@ -48,4 +51,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Corrected Prisma Client usage for POWRA model
 
 ### Development
+
 - Regenerated Prisma Client to recognize POWRA model correctly

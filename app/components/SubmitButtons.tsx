@@ -1,36 +1,36 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { useFormStatus } from "react-dom";
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+import { useFormStatus } from 'react-dom';
 
 interface SubmitButtonProps {
-	text: string;
-	variant?:
-		| "default"
-		| "destructive"
-		| "outline"
-		| "secondary"
-		| "ghost"
-		| "link"
-		| null
-		| undefined;
+  text: string;
+  variant?:
+    | 'default'
+    | 'destructive'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link'
+    | null
+    | undefined;
 }
 
 export function SubmitButton({ text, variant }: SubmitButtonProps) {
-	const { pending } = useFormStatus();
+  const { pending } = useFormStatus();
 
-	return (
-		<div className="space-y-2">
-			{pending ? (
-				<Button disabled className="w-full" variant={variant}>
-					<Loader2 className="size-4 mr-2 animate-spin" /> Please wait...
-				</Button>
-			) : (
-				<Button type="submit" className="w-full" variant={variant}>
-					{text}
-				</Button>
-			)}
-		</div>
-	);
+  return (
+    <div className="space-y-2">
+      {pending ? (
+        <Button disabled className="w-full" variant={variant}>
+          <Loader2 className="size-4 mr-2 animate-spin" /> Please wait...
+        </Button>
+      ) : (
+        <Button type="submit" className="w-full" variant={variant}>
+          {text}
+        </Button>
+      )}
+    </div>
+  );
 }

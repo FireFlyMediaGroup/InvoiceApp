@@ -1,21 +1,31 @@
-"use client";
+'use client';
 
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { POWRAFormData } from "./POWRAFormData";
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { POWRAFormData } from './POWRAFormData';
 
 type Part4ReviewProps = {
   formData: POWRAFormData;
   setFormData: React.Dispatch<React.SetStateAction<POWRAFormData>>;
 };
 
-export default function Part4Review({ formData, setFormData }: Part4ReviewProps) {
+export default function Part4Review({
+  formData,
+  setFormData,
+}: Part4ReviewProps) {
   const handleReviewCommentsChange = (value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       reviewComments: value,
     }));
@@ -24,7 +34,9 @@ export default function Part4Review({ formData, setFormData }: Part4ReviewProps)
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl font-bold bg-green-500 text-white p-2 rounded">Part 4 - REVIEW</CardTitle>
+        <CardTitle className="text-xl font-bold bg-green-500 text-white p-2 rounded">
+          Part 4 - REVIEW
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Table>
@@ -67,7 +79,9 @@ export default function Part4Review({ formData, setFormData }: Part4ReviewProps)
               id="review-comments"
               placeholder="If Yes, comment below and inform your Chief Pilot / HSE Manager."
               value={formData.reviewComments}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleReviewCommentsChange(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                handleReviewCommentsChange(e.target.value)
+              }
             />
           </div>
         </div>

@@ -18,7 +18,7 @@ model POWRA {
   beforeStartChecklist Json
   controlMeasures Json
   reviewComments String?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   User      User     @relation(fields: [userId], references: [id])
@@ -33,6 +33,7 @@ enum POWRAStatus {
 ```
 
 This model includes:
+
 - A unique identifier
 - The current status of the POWRA (draft, submitted, or approved)
 - Header fields for general information
@@ -58,6 +59,7 @@ All routes include authentication checks to ensure that users can only access an
 #### POWRAList Component
 
 Located in `app/components/POWRAList.tsx`, this component displays a list of existing POWRAs for the user. It includes functionality to:
+
 - Fetch and display POWRAs
 - Provide options to edit, delete, or submit POWRAs
 - Copy POWRA IDs to the clipboard
@@ -65,6 +67,7 @@ Located in `app/components/POWRAList.tsx`, this component displays a list of exi
 #### POWRAForm Component
 
 Located in `app/components/POWRAForm.tsx`, this component is used for both creating new POWRAs and editing existing ones. It includes:
+
 - Form fields for all POWRA data (header fields, checklist, control measures, etc.)
 - Dynamic addition of control measures
 - Submission handling for both new and existing POWRAs
@@ -72,6 +75,7 @@ Located in `app/components/POWRAForm.tsx`, this component is used for both creat
 #### POWRA Page
 
 Located in `app/dashboard/powra/page.tsx`, this is the main page for the POWRA feature. It:
+
 - Toggles between the POWRAList and POWRAForm views
 - Handles the creation of new POWRAs and editing of existing ones
 
@@ -97,6 +101,7 @@ Located in `app/dashboard/powra/page.tsx`, this is the main page for the POWRA f
 ## Future Enhancements
 
 Potential areas for future development include:
+
 - Approval workflows for submitted POWRAs
 - Reporting and analytics features
 - Integration with other safety management systems
@@ -112,6 +117,7 @@ Potential areas for future development include:
 ## Troubleshooting
 
 If encountering issues with the POWRA feature:
+
 1. Ensure the Prisma client has been regenerated after any schema changes:
    ```
    npx prisma generate

@@ -1,10 +1,12 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { CheckIcon } from "@radix-ui/react-icons";
+import * as React from 'react';
+import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
+import { CheckIcon } from '@radix-ui/react-icons';
 
-type CheckboxProps = React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root> & {
+type CheckboxProps = React.ComponentPropsWithoutRef<
+  typeof CheckboxPrimitive.Root
+> & {
   onCheckedChange?: (checked: boolean) => void;
 };
 
@@ -25,4 +27,4 @@ export const Checkbox = React.forwardRef<
     </CheckboxPrimitive.Root>
   );
 });
-Checkbox.displayName = "Checkbox";
+Checkbox.displayName = 'Checkbox';

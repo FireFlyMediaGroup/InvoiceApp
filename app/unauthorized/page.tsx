@@ -10,14 +10,12 @@ export default function UnauthorizedPage() {
         <div className="space-y-4 text-center">
           <h1 className="text-2xl font-bold">Unauthorized Access</h1>
           <p className="text-gray-600">
-            You do not have permission to access this page. Please log in with appropriate credentials.
+            You do not have permission to access this page. Please log in with
+            appropriate credentials.
           </p>
           <div className="pt-4">
             <Link href="/login">
-              <Button
-                variant="default"
-                className="w-full"
-              >
+              <Button variant="default" className="w-full">
                 Go to Login
               </Button>
             </Link>

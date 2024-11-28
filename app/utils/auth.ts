@@ -3,7 +3,8 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
 import type { Session, User } from "next-auth";
-import Nodemailer from "next-auth/providers/nodemailer";
+import NodemailerProvider from "next-auth/providers/nodemailer";
+import nodemailer from "nodemailer";
 import prisma from "./db";
 
 console.log("[NextAuth] Initializing auth configuration");
@@ -81,119 +82,125 @@ const validateEmailConfig = () => {
 };
 
 export const authConfig: NextAuthConfig = {
-	adapter: customPrismaAdapter,
-	providers: [
-		Nodemailer({
-			server: {
-				host: process.env.EMAIL_SERVER_HOST,
-				port: Number(process.env.EMAIL_SERVER_PORT),
-				auth: {
-					user: process.env.EMAIL_SERVER_USER,
-					pass: process.env.EMAIL_SERVER_PASSWORD,
-				},
-				// Set connection timeout in transport options
-				connectionTimeout: 10000,
-				socketTimeout: 10000,
-			},
-			from: process.env.EMAIL_FROM,
-		}),
-	],
-	pages: {
-		verifyRequest: "/verify",
-		signIn: "/login",
-		error: "/verify", // Changed to always show verify page
-	},
-	callbacks: {
-		async signIn({ user }): Promise<boolean> {
-			customLogger(`Entering signIn callback for user: ${user.email}`);
+  adapter: customPrismaAdapter,
+  providers: [
+    NodemailerProvider({
+      server: {
+        host: process.env.EMAIL_SERVER_HOST,
+        port: Number(process.env.EMAIL_SERVER_PORT),
+        auth: {
+          user: process.env.EMAIL_SERVER_USER,
+          pass: process.env.EMAIL_SERVER_PASSWORD,
+        },
+        connectionTimeout: 10000,
+        socketTimeout: 10000,
+      },
+      from: process.env.EMAIL_FROM,
+      async sendVerificationRequest({ identifier, url, provider }) {
+        if (!validateEmailConfig()) {
+          customLogger("Email configuration validation failed");
+          throw new Error("System configuration error. Please contact support.");
+        }
 
-			if (!user.email) {
-				customLogger("Sign in failed: No email provided");
-				return false;
-			}
+        const dbUser = await prisma.user.findUnique({
+          where: { email: identifier },
+        });
 
-			try {
-				if (!validateEmailConfig()) {
-					customLogger("Email configuration validation failed");
-					throw new Error(
-						"System configuration error. Please contact support.",
-					);
-				}
+        if (!dbUser || !dbUser.isAllowed) {
+          customLogger(`Magic link not sent: User not authorized (${identifier})`);
+          return; // Do not send the magic link
+        }
 
-				customLogger(`Attempting to find user in database: ${user.email}`);
-				const dbUser = await prisma.user.findUnique({
-					where: { email: user.email },
-				});
+        const { host } = new URL(url);
+        const transport = nodemailer.createTransport(provider.server);
+        try {
+          await transport.sendMail({
+            to: identifier,
+            from: provider.from,
+            subject: `Sign in to ${host}`,
+            text: `Sign in to ${host}\n\n${url}\n\n`,
+            html: `<p>Sign in to <strong>${host}</strong></p><p><a href="${url}">Sign in</a></p>`,
+          });
+          customLogger(`Magic link sent to: ${identifier}`);
+        } catch (error) {
+          customLogger("Error sending email:", error);
+          throw new EmailSendError("Failed to send verification email. Please try again later.");
+        }
+      },
+    }),
+  ],
+  pages: {
+    verifyRequest: "/verify",
+    signIn: "/login",
+    error: "/verify",
+  },
+  callbacks: {
+    async signIn({ user }): Promise<boolean> {
+      customLogger(`Entering signIn callback for user: ${user.email}`);
+      
+      if (!user.email) {
+        customLogger('Sign in failed: No email provided');
+        return true; // Always return true to show the verify card
+      }
+      
+      try {
+        customLogger(`Attempting to find user in database: ${user.email}`);
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        });
 
-				// For security, we'll show the same verify page regardless of user status
-				if (!dbUser || !dbUser.isAllowed) {
-					customLogger(`User verification failed: ${user.email}`);
-					// Instead of throwing an error, redirect to verify page
-					return true;
-				}
+        if (!dbUser || !dbUser.isAllowed) {
+          customLogger(`User not authorized: ${user.email}`);
+          return true; // Always return true to show the verify card
+        }
 
-				customLogger(`Sign in successful for user: ${user.email}`);
-				return true;
-			} catch (error) {
-				customLogger("Error during sign in:", error);
-
-				if (error instanceof Error) {
-					if (error.message.includes("ETIMEDOUT")) {
-						throw new Error("Email service timed out. Please try again later.");
-					}
-					if (error.message.includes("ECONNREFUSED")) {
-						throw new Error(
-							"Unable to connect to email service. Please try again later.",
-						);
-					}
-				}
-
-				// For any error, show the verify page
-				return true;
-			}
-		},
-		async session({ session, user }): Promise<ExtendedSession> {
-			customLogger(`Session callback called for user: ${user.id}`);
-			const extendedSession = session as ExtendedSession;
-			if (extendedSession.user) {
-				extendedSession.user.id = user.id;
-				const dbUser = await prisma.user.findUnique({
-					where: { id: user.id },
-					select: { isAllowed: true },
-				});
-				if (dbUser) {
-					extendedSession.user.isAllowed = dbUser.isAllowed;
-				}
-			}
-			return extendedSession;
-		},
-	},
-	events: {
-		async signIn({ user }): Promise<void> {
-			customLogger(`SignIn event triggered for user: ${user.id}`);
-		},
-		async session({ session, token }): Promise<void> {
-			customLogger(`Session event triggered for user: ${session.user?.id}`, {
-				sessionToken: token,
-			});
-		},
-	},
-	logger: {
-		error(error: Error) {
-			customLogger(`Error: ${error.message}`, error);
-		},
-		warn(code: string) {
-			customLogger(`Warning: ${code}`);
-		},
-		debug(code: string, metadata: unknown) {
-			customLogger(`Debug: ${code}`, metadata);
-		},
-	},
-	session: {
-		strategy: "database",
-		maxAge: 30 * 24 * 60 * 60, // 30 days
-		updateAge: 24 * 60 * 60, // 24 hours
-	},
+        customLogger(`User authorized: ${user.email}`);
+        return true;
+      } catch (error) {
+        customLogger('Error during sign in:', error);
+        return true; // Always return true to show the verify card
+      }
+    },
+    async session({ session, user }): Promise<ExtendedSession> {
+      customLogger(`Session callback called for user: ${user.id}`);
+      const extendedSession = session as ExtendedSession;
+      if (extendedSession.user) {
+        extendedSession.user.id = user.id;
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { isAllowed: true },
+        });
+        if (dbUser) {
+          extendedSession.user.isAllowed = dbUser.isAllowed;
+        }
+      }
+      return extendedSession;
+    },
+  },
+  events: {
+    async signIn({ user }): Promise<void> {
+      customLogger(`SignIn event triggered for user: ${user.id}`);
+    },
+    async session({ session, token }): Promise<void> {
+      customLogger(`Session event triggered for user: ${session.user?.id}`, { sessionToken: token });
+    },
+  },
+  logger: {
+    error(error: Error) {
+      customLogger(`Error: ${error.message}`, error);
+    },
+    warn(code: string) {
+      customLogger(`Warning: ${code}`);
+    },
+    debug(code: string, metadata: unknown) {
+      customLogger(`Debug: ${code}`, metadata);
+    },
+  },
+  session: {
+    strategy: "database",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
+  },
 };
 
 console.log("[NextAuth] Auth configuration initialized, creating handlers");

@@ -13,18 +13,34 @@ type CheckboxProps = React.ComponentPropsWithoutRef<
 export const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
   CheckboxProps
->(({ className, onCheckedChange, ...props }, ref) => {
+>(({ className, onCheckedChange, checked, ...props }, ref) => {
+  const handleCheckedChange = (newChecked: boolean | 'indeterminate') => {
+    console.log('Checkbox state changed:', newChecked);
+    if (onCheckedChange) {
+      onCheckedChange(newChecked === true);
+    }
+  };
+
   return (
-    <CheckboxPrimitive.Root
-      ref={ref}
-      className={`h-5 w-5 rounded border border-gray-300 bg-white checked:bg-blue-500 focus:outline-none ${className}`}
-      onCheckedChange={(checked) => onCheckedChange?.(!!checked)}
-      {...props}
-    >
-      <CheckboxPrimitive.Indicator className="flex items-center justify-center text-white">
-        <CheckIcon />
-      </CheckboxPrimitive.Indicator>
-    </CheckboxPrimitive.Root>
+    <div className="flex items-center space-x-2">
+      <CheckboxPrimitive.Root
+        ref={ref}
+        className={`flex h-6 w-6 items-center justify-center rounded border-2 border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          checked ? 'bg-blue-100 border-blue-500' : ''
+        } ${className}`}
+        checked={checked}
+        onCheckedChange={handleCheckedChange}
+        {...props}
+      >
+        <CheckboxPrimitive.Indicator className="text-blue-500">
+          <CheckIcon className="h-5 w-5" />
+        </CheckboxPrimitive.Indicator>
+      </CheckboxPrimitive.Root>
+      <span className="text-sm">
+        {checked ? 'Checked' : 'Unchecked'}
+      </span>
+    </div>
   );
 });
+
 Checkbox.displayName = 'Checkbox';

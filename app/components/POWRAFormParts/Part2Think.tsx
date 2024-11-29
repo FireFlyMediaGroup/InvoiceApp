@@ -1,8 +1,8 @@
 'use client';
 
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '../ui/checkbox';
+import { Label } from '../ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import type { POWRAFormData } from './POWRAFormData';
 
 type Part2ThinkProps = {
@@ -10,18 +10,25 @@ type Part2ThinkProps = {
   setFormData: React.Dispatch<React.SetStateAction<POWRAFormData>>;
 };
 
-export default function Part2Think({ formData, setFormData }: Part2ThinkProps) {
-  const checklistItems = [
-    'Are you at the authorised Inspection / WTG Location?',
-    'Do you have the correct documentation?(RAMS, Pt. 107, First Aid etc)',
-    'Do you have the correct PPE / RPE and Safety Equipment? (Including Truck)',
-    'Are you competent and authorised to complete the task?',
-    'Is Inspection Equipment, tools, suitable and in date for Operation (MX Interval)',
-    'Is access / egress safe and in date for inspection? (Ladders, WTG Stairs, scaffolds etc)',
-    'Is environmental condition safe for operations? (weather, road cond.)',
-  ];
+// Define the checklist items as a const array to ensure type safety
+const checklistItems = [
+  'Are you at the authorised Inspection / WTG Location?',
+  'Do you have the correct documentation?(RAMS, Pt. 107, First Aid etc)',
+  'Do you have the correct PPE / RPE and Safety Equipment? (Including Truck)',
+  'Are you competent and authorised to complete the task?',
+  'Is Inspection Equipment, tools, suitable and in date for Operation (MX Interval)',
+  'Is access / egress safe and in date for inspection? (Ladders, WTG Stairs, scaffolds etc)',
+  'Is environmental condition safe for operations? (weather, road cond.)',
+] as const;
 
-  const handleChecklistChange = (item: string, checked: boolean) => {
+type ChecklistItem = typeof checklistItems[number];
+
+/**
+ * Part2Think component handles the "THINK" section of the POWRA form.
+ * It displays a checklist of safety considerations for the user to confirm before starting work.
+ */
+export default function Part2Think({ formData, setFormData }: Part2ThinkProps) {
+  const handleChecklistChange = (item: ChecklistItem, checked: boolean) => {
     setFormData((prev) => ({
       ...prev,
       beforeStartChecklist: checked

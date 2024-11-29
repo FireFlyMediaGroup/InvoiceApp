@@ -120,14 +120,38 @@ enum POWRAStatus {
 }
 
 model POWRA {
-  id                  String      @id @default(uuid())
-  status             POWRAStatus @default(DRAFT)
-  headerFields       Json
-  beforeStartChecklist Json
-  controlMeasures    Json
-  reviewComments     String?
-  userId             String
-  user               User        @relation(fields: [userId], references: [id])
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  id                   String           @id @default(uuid())
+  status               POWRAStatus      @default(DRAFT)
+  site                 String
+  date                 DateTime
+  time                 String
+  pilotName            String
+  location             String
+  chiefPilot           String
+  hse                  String
+  beforeStartChecklist String[]
+  reviewNames          String[]
+  reviewDates          DateTime[]
+  lessonsLearned       Boolean
+  reviewComments       String?
+  userId               String
+  user                 User             @relation(fields: [userId], references: [id])
+  controlMeasures      ControlMeasure[]
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+}
+
+model ControlMeasure {
+  id        String @id @default(uuid())
+  hazardNo  String
+  measures  String
+  risk      Risk
+  powraId   String
+  powra     POWRA  @relation(fields: [powraId], references: [id], onDelete: Cascade)
+}
+
+enum Risk {
+  L
+  M
+  H
 }

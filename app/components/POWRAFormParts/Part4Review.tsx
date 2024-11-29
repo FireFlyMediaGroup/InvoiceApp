@@ -1,9 +1,9 @@
 'use client';
 
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
+import { Checkbox } from '../ui/checkbox';
+import { Label } from '../ui/label';
 import {
   Table,
   TableBody,
@@ -11,8 +11,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+} from '../ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import type { POWRAFormData } from './POWRAFormData';
 
 type Part4ReviewProps = {
@@ -20,21 +20,49 @@ type Part4ReviewProps = {
   setFormData: React.Dispatch<React.SetStateAction<POWRAFormData>>;
 };
 
+const REVIEW_ROW_IDS = ['review-1', 'review-2', 'review-3', 'review-4'] as const;
+type ReviewRowId = typeof REVIEW_ROW_IDS[number];
+
+/**
+ * Part4Review component handles the "REVIEW" section of the POWRA form.
+ * It allows users to input review details, indicate if lessons were learned,
+ * and provide comments on the POWRA.
+ */
 export default function Part4Review({
   formData,
   setFormData,
 }: Part4ReviewProps) {
+  const handleReviewChange = (id: ReviewRowId, field: 'name' | 'date', value: string) => {
+    const index = REVIEW_ROW_IDS.indexOf(id);
+    if (index === -1) {
+      console.error(`Invalid review id: ${id}`);
+      return;
+    }
+
+    setFormData((prev) => {
+      if (field === 'name') {
+        const updatedNames = [...prev.reviewNames];
+        updatedNames[index] = value;
+        return { ...prev, reviewNames: updatedNames };
+      }
+      const updatedDates = [...prev.reviewDates];
+      updatedDates[index] = new Date(value);
+      return { ...prev, reviewDates: updatedDates };
+    });
+  };
+
+  const handleLessonsLearnedChange = (checked: boolean) => {
+    setFormData((prev) => ({ ...prev, lessonsLearned: checked }));
+  };
+
   const handleReviewCommentsChange = (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      reviewComments: value,
-    }));
+    setFormData((prev) => ({ ...prev, reviewComments: value || null }));
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl font-bold bg-green-500 text-white p-2 rounded">
+        <CardTitle className="text-xl font-bold bg-blue-500 text-white p-2 rounded">
           Part 4 - REVIEW
         </CardTitle>
       </CardHeader>
@@ -47,13 +75,20 @@ export default function Part4Review({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {[1, 2, 3, 4].map((row) => (
-              <TableRow key={row}>
+            {REVIEW_ROW_IDS.map((id, index) => (
+              <TableRow key={id}>
                 <TableCell>
-                  <Input />
+                  <Input
+                    value={formData.reviewNames[index] || ''}
+                    onChange={(e) => handleReviewChange(id, 'name', e.target.value)}
+                  />
                 </TableCell>
                 <TableCell>
-                  <Input type="date" />
+                  <Input
+                    type="date"
+                    value={formData.reviewDates[index] ? formData.reviewDates[index].toISOString().split('T')[0] : ''}
+                    onChange={(e) => handleReviewChange(id, 'date', e.target.value)}
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -62,15 +97,13 @@ export default function Part4Review({
         <div className="space-y-4">
           <div className="flex items-center space-x-4">
             <Label>Are there any lessons for next time?</Label>
-            <div className="flex space-x-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="lessons-yes" />
-                <Label htmlFor="lessons-yes">Yes</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="lessons-no" />
-                <Label htmlFor="lessons-no">No</Label>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="lessons-learned"
+                checked={formData.lessonsLearned}
+                onCheckedChange={(checked) => handleLessonsLearnedChange(checked === true)}
+              />
+              <Label htmlFor="lessons-learned">Yes</Label>
             </div>
           </div>
           <div>
@@ -78,7 +111,7 @@ export default function Part4Review({
             <Textarea
               id="review-comments"
               placeholder="If Yes, comment below and inform your Chief Pilot / HSE Manager."
-              value={formData.reviewComments}
+              value={formData.reviewComments || ''}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                 handleReviewCommentsChange(e.target.value)
               }

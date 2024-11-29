@@ -43,18 +43,19 @@ export default function POWRAList({ onEdit }: POWRAListProps) {
       try {
         const response = await fetch('/api/powra');
         if (!response.ok) {
+          const errorData = await response.json();
           if (response.status === 401) {
             throw new Error('Unauthorized. Please log in and try again.');
           }
-          throw new Error('Failed to fetch POWRAs');
+          throw new Error(errorData.error || 'Failed to fetch POWRAs');
         }
         const data = await response.json();
-        setPowras(data);
+        setPowras(data.data || []);
       } catch (error) {
         console.error('Error fetching POWRAs:', error);
         setError(
           error instanceof Error
-            ? error.message
+            ? `Error: ${error.message}`
             : 'An unexpected error occurred'
         );
       } finally {
@@ -71,14 +72,15 @@ export default function POWRAList({ onEdit }: POWRAListProps) {
         method: 'DELETE',
       });
       if (!response.ok) {
-        throw new Error('Failed to delete POWRA');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete POWRA');
       }
       setPowras(powras.filter((powra) => powra.id !== id));
     } catch (error) {
       console.error('Error deleting POWRA:', error);
       setError(
         error instanceof Error
-          ? error.message
+          ? `Error: ${error.message}`
           : 'An unexpected error occurred while deleting'
       );
     }

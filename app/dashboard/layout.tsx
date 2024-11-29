@@ -9,7 +9,7 @@ import {
 } from '../../components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '../../components/ui/sheet';
 import { Toaster } from '../../components/ui/sonner';
-import Logo from '../../public/logo.png';
+import Logo from '../../public/SkySpecs_Logo_Stacked_vertical.png';
 import { Menu, User2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -53,7 +53,7 @@ export default async function DashboardLayout({
               <Link href="/" className="flex items-center gap-2">
                 <Image src={Logo} alt="Logo" className="size-7" />
                 <p className="text-2xl font-bold">
-                  Invoice<span className="text-blue-600">Marshal</span>
+                  Safety<span className="text-blue-600">Docs</span>
                 </p>
               </Link>
             </div>

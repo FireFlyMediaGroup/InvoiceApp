@@ -2,16 +2,20 @@ import prisma from '@/app/utils/db';
 import { formatCurrency } from '@/app/utils/formatCurrency';
 import jsPDF from 'jspdf';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { rbacMiddleware } from '@/app/middleware/rbac';
 
-export async function GET(
-  request: Request,
+type Currency = 'USD' | 'EUR' | 'GBP'; // Add more currencies as needed
+
+async function getInvoice(
+  request: NextRequest,
   {
     params,
   }: {
-    params: Promise<{ invoiceId: string }>;
+    params: { invoiceId: string };
   }
 ) {
-  const { invoiceId } = await params;
+  const { invoiceId } = params;
 
   const data = await prisma.invoice.findUnique({
     where: {
@@ -96,13 +100,13 @@ export async function GET(
   pdf.text(
     formatCurrency({
       amount: data.invoiceItemRate,
-      currency: data.currency as any,
+      currency: data.currency as Currency,
     }),
     130,
     110
   );
   pdf.text(
-    formatCurrency({ amount: data.total, currency: data.currency as any }),
+    formatCurrency({ amount: data.total, currency: data.currency as Currency }),
     160,
     110
   );
@@ -112,7 +116,7 @@ export async function GET(
   pdf.setFont('helvetica', 'bold');
   pdf.text(`Total (${data.currency})`, 130, 130);
   pdf.text(
-    formatCurrency({ amount: data.total, currency: data.currency as any }),
+    formatCurrency({ amount: data.total, currency: data.currency as Currency }),
     160,
     130
   );
@@ -129,7 +133,6 @@ export async function GET(
   const pdfBuffer = Buffer.from(pdf.output('arraybuffer'));
 
   //return pdf as download
-
   return new NextResponse(pdfBuffer, {
     headers: {
       'Content-Type': 'application/pdf',
@@ -137,3 +140,6 @@ export async function GET(
     },
   });
 }
+
+export const GET = (request: NextRequest, context: { params: { invoiceId: string } }) => 
+  rbacMiddleware(request, () => getInvoice(request, context), ['USER', 'SUPERVISOR', 'ADMIN']);

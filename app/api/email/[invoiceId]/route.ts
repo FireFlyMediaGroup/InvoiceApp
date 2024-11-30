@@ -2,19 +2,21 @@ import prisma from '@/app/utils/db';
 import { requireUser } from '@/app/utils/hooks';
 import { emailClient } from '@/app/utils/mailtrap';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { rbacMiddleware } from '@/app/middleware/rbac';
 
-export async function POST(
-  request: Request,
+async function sendEmailReminder(
+  request: NextRequest,
   {
     params,
   }: {
-    params: Promise<{ invoiceId: string }>;
+    params: { invoiceId: string };
   }
 ) {
   try {
     const session = await requireUser();
 
-    const { invoiceId } = await params;
+    const { invoiceId } = params;
 
     const invoiceData = await prisma.invoice.findUnique({
       where: {
@@ -32,7 +34,7 @@ export async function POST(
       name: 'SkySpecs',
     };
 
-    emailClient.send({
+    await emailClient.send({
       from: sender,
       to: [{ email: 'jan@alenix.de' }],
       template_uuid: '03c0c5ec-3f09-42ab-92c3-9f338f31fe2c',
@@ -55,3 +57,6 @@ export async function POST(
     );
   }
 }
+
+export const POST = (request: NextRequest, context: { params: { invoiceId: string } }) =>
+  rbacMiddleware(request, () => sendEmailReminder(request, context), ['USER', 'SUPERVISOR', 'ADMIN']);

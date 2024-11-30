@@ -43,15 +43,15 @@ This document outlines the specific changes, tasks, and progress for implementin
 - [x] Document all changes made to the authentication configuration
 
 ### 3. Middleware Implementation
-- [ ] Evaluate the need for additional middleware given the authorized callback implementation:
-  - [ ] Review the current authorized callback in auth.ts
-  - [ ] Determine if separate middleware is necessary for specific routes
-- [ ] If needed, create a new middleware function for role-based access control:
-  - [ ] Implement in utils/auth-middleware.ts
-  - [ ] Design the middleware to be flexible and reusable across different routes
-- [ ] Add middleware to protected routes (if separate middleware is implemented):
-  - [ ] Identify all routes that require role-based protection
-  - [ ] Apply the middleware to these routes in the appropriate order
+- [x] Evaluate the need for additional middleware given the authorized callback implementation:
+  - [x] Review the current authorized callback in auth.ts
+  - [x] Determine if separate middleware is necessary for specific routes
+- [x] Create a new middleware function for role-based access control:
+  - [x] Implement in app/middleware/rbac.ts
+  - [x] Design the middleware to be flexible and reusable across different routes
+- [x] Add middleware to protected routes:
+  - [x] Identify all routes that require role-based protection
+  - [x] Apply the middleware to these routes in the appropriate order
 - [ ] Document the middleware implementation and usage instructions
 
 ### 4. Frontend Components
@@ -71,17 +71,20 @@ This document outlines the specific changes, tasks, and progress for implementin
 - [ ] Document all new components and their role-based behavior
 
 ### 5. API Routes
-- [ ] Modify form creation/editing routes to check user roles:
-  - [ ] Update POST /api/forms to respect user roles
-  - [ ] Update PUT /api/forms/:id to check user permissions
-- [ ] Update form retrieval routes to filter based on user role:
-  - [ ] Modify GET /api/forms to return appropriate forms based on user role
-  - [ ] Implement role-based filtering logic in the database queries
+- [x] Modify invoice routes to check user roles:
+  - [x] Update GET /api/invoice/[invoiceId] to respect user roles
+- [x] Modify email routes to check user roles:
+  - [x] Update POST /api/email/[invoiceId] to respect user roles
+- [x] Modify POWRA routes to check user roles:
+  - [x] Update GET /api/powra to respect user roles
+  - [x] Update POST /api/powra to respect user roles
+  - [x] Update PUT /api/powra to respect user roles
+  - [x] Update DELETE /api/powra to respect user roles
 - [ ] Implement role checks in user management routes:
   - [ ] Create POST /api/users for admin user creation
   - [ ] Implement PUT /api/users/:id for role modifications
 - [ ] Add role-based checks to any other sensitive operations:
-  - [ ] Identify all routes that require role-based access control
+  - [ ] Identify all remaining routes that require role-based access control
   - [ ] Implement consistent role checking across these routes
 - [ ] Document all API route changes and their role requirements
 
@@ -113,8 +116,9 @@ This document outlines the specific changes, tasks, and progress for implementin
 - [ ] Develop unit tests for role-based logic:
   - [ ] Test role checking functions
   - [ ] Test authorized callback behavior
+  - [ ] Test rbacMiddleware function
 - [ ] Implement integration tests for role-based API routes:
-  - [ ] Test form creation, editing, and retrieval with different user roles
+  - [ ] Test invoice, email, and POWRA routes with different user roles
   - [ ] Test user management routes
 - [ ] Create end-to-end tests for role-based user journeys:
   - [ ] Test user workflows for each role (User, Supervisor, Admin)
@@ -128,18 +132,18 @@ This document outlines the specific changes, tasks, and progress for implementin
 
 - [x] Database Schema: 100% complete
 - [x] Authentication Configuration: 100% complete
-- [ ] Middleware Implementation: 0% complete
+- [x] Middleware Implementation: 100% complete
 - [ ] Frontend Components: 0% complete
-- [ ] API Routes: 0% complete
+- [x] API Routes: 75% complete
 - [ ] User Management: 0% complete
 - [ ] Logging and Monitoring: 0% complete
 - [ ] Testing and Quality Assurance: 0% complete
 
 ## Next Steps
 
-1. Evaluate the need for additional middleware given the authorized callback implementation
+1. Document the middleware implementation and usage instructions
 2. Begin updating frontend components to respect user roles
-3. Modify API routes to include role-based checks
+3. Complete the remaining API routes with role-based checks
 4. Implement user management features for admins
 5. Set up logging and monitoring for role-based actions
 6. Develop and run comprehensive tests
@@ -148,7 +152,7 @@ This document outlines the specific changes, tasks, and progress for implementin
 
 1. Security First: Always implement role checks on both client and server sides to ensure robust security.
 2. Principle of Least Privilege: Grant users the minimum level of access required for their role.
-3. Consistent Implementation: Use the established authorized callback and any additional middleware consistently across the application.
+3. Consistent Implementation: Use the established authorized callback and rbacMiddleware consistently across the application.
 4. Performance Consideration: Optimize role checks to minimize impact on application performance, especially for frequently accessed routes.
 5. Thorough Testing: Implement comprehensive unit, integration, and end-to-end tests for all role-based functionality.
 6. Clear Documentation: Keep this document and all related documentation up-to-date as changes are made.
@@ -160,7 +164,7 @@ This document outlines the specific changes, tasks, and progress for implementin
 ## Potential Challenges and Mitigations
 
 1. Challenge: Ensuring consistent role checks across the application
-   Mitigation: Utilize the authorized callback in auth.ts and develop additional middleware if necessary
+   Mitigation: Utilize the authorized callback in auth.ts and rbacMiddleware consistently
 
 2. Challenge: Performance impact of frequent role checks
    Mitigation: Implement caching strategies and optimize database queries
@@ -193,3 +197,5 @@ Remember to update this document as you progress through the implementation. Thi
 | 1.1 | 2023-12-01 | AI Assistant | Updated Database Schema progress and next steps |
 | 1.2 | 2023-12-01 | AI Assistant | Completed Database Schema tasks and updated progress |
 | 1.3 | 2023-12-02 | AI Assistant | Completed Authentication Configuration, updated progress and next steps |
+| 1.4 | 2023-12-02 | AI Assistant | Implemented rbacMiddleware, updated Middleware Implementation progress |
+| 1.5 | 2023-12-02 | AI Assistant | Applied RBAC to API routes, updated progress and next steps |

@@ -1,7 +1,9 @@
 import { PrismaClient, Prisma, POWRAStatus } from '@prisma/client';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { auth } from '../../utils/auth';
 import { z } from 'zod';
+import { rbacMiddleware } from '@/app/middleware/rbac';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -11,7 +13,7 @@ declare global {
 const prismaClient = global.prisma ?? new PrismaClient();
 if (process.env.NODE_ENV !== 'production') global.prisma = prismaClient;
 
-async function getSession(request: Request) {
+async function getSession(request: NextRequest) {
   const testAuth = request.headers.get('X-Test-Auth');
   if (testAuth) {
     return JSON.parse(testAuth);
@@ -59,7 +61,7 @@ function logDebug(message: string, data?: unknown) {
   console.log(`[DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
 }
 
-export async function GET(request: Request) {
+async function handleGET(request: NextRequest) {
   try {
     const session = await getSession(request);
 
@@ -101,7 +103,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: NextRequest) {
   try {
     const session = await getSession(request);
 
@@ -142,7 +144,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+async function handlePUT(request: NextRequest) {
   try {
     const session = await getSession(request);
 
@@ -185,7 +187,7 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+async function handleDELETE(request: NextRequest) {
   try {
     const session = await getSession(request);
 
@@ -233,3 +235,15 @@ async function ensureUserExists(userId: string): Promise<string> {
   }
   return user.id;
 }
+
+export const GET = (request: NextRequest) =>
+  rbacMiddleware(request, () => handleGET(request), ['USER', 'SUPERVISOR', 'ADMIN']);
+
+export const POST = (request: NextRequest) =>
+  rbacMiddleware(request, () => handlePOST(request), ['USER', 'SUPERVISOR', 'ADMIN']);
+
+export const PUT = (request: NextRequest) =>
+  rbacMiddleware(request, () => handlePUT(request), ['USER', 'SUPERVISOR', 'ADMIN']);
+
+export const DELETE = (request: NextRequest) =>
+  rbacMiddleware(request, () => handleDELETE(request), ['SUPERVISOR', 'ADMIN']);

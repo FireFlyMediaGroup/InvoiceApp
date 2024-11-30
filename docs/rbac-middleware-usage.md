@@ -1,73 +1,98 @@
-# RBAC Middleware Implementation and Usage Guide
+# RBAC Middleware Usage Guide
 
 ## Overview
 
-This document provides an overview of the Role-Based Access Control (RBAC) middleware implementation in our application and instructions on how to use it to protect routes and resources.
+This document provides instructions on how to use the Role-Based Access Control (RBAC) middleware in our application. The RBAC middleware is designed to protect routes and ensure that only users with the appropriate roles can access certain parts of the application.
 
 ## Middleware Implementation
 
-The RBAC middleware is implemented in the file `app/middleware/rbac.ts`. It provides a flexible way to apply role-based access control to our API routes.
+The RBAC middleware is implemented in the `app/middleware/rbac.ts` file. It uses the user's role information stored in the session to determine if the user has the necessary permissions to access a particular route.
 
-### Key Components
+## How to Use the RBAC Middleware
 
-1. `rbacMiddleware` function: This is the main middleware function that checks the user's role against the allowed roles for a particular route.
-
-2. `getToken` function: Used to retrieve the user's session token from the request.
-
-3. Allowed roles: An array of role strings that specifies which roles are permitted to access the route.
-
-## Usage Instructions
-
-To use the RBAC middleware in your API routes, follow these steps:
-
-1. Import the middleware in your API route file:
+1. Import the middleware in your route file:
 
 ```typescript
 import { rbacMiddleware } from '@/app/middleware/rbac';
 ```
 
-2. Wrap your route handler with the rbacMiddleware function:
+2. Apply the middleware to your route handler:
 
 ```typescript
-export const GET = (request: NextRequest) =>
-  rbacMiddleware(request, () => handleGET(request), ['USER', 'SUPERVISOR', 'ADMIN']);
-```
-
-3. Specify the allowed roles for the route as the third argument to rbacMiddleware.
-
-### Example
-
-Here's an example of how to use the RBAC middleware in a route file:
-
-```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { rbacMiddleware } from '@/app/middleware/rbac';
-
-async function handleGET(request: NextRequest) {
+export async function GET(req: NextRequest) {
+  const result = await rbacMiddleware(req, ['ADMIN', 'SUPERVISOR']);
+  if (result instanceof NextResponse) {
+    return result; // This is an error response, return it
+  }
+  
   // Your route logic here
-  return NextResponse.json({ message: 'Protected data' });
 }
-
-export const GET = (request: NextRequest) =>
-  rbacMiddleware(request, () => handleGET(request), ['ADMIN', 'SUPERVISOR']);
 ```
 
-In this example, only users with the 'ADMIN' or 'SUPERVISOR' role will be able to access this GET route.
+3. The middleware takes two parameters:
+   - The incoming request object
+   - An array of allowed roles for this route
+
+4. If the user's role is not in the allowed roles array, the middleware will return an unauthorized response. Otherwise, it will allow the request to proceed.
+
+## Example Usage
+
+Here's an example of how to use the RBAC middleware in different scenarios:
+
+### Admin-only route
+
+```typescript
+export async function POST(req: NextRequest) {
+  const result = await rbacMiddleware(req, ['ADMIN']);
+  if (result instanceof NextResponse) {
+    return result;
+  }
+  
+  // Admin-only logic here
+}
+```
+
+### Route accessible by both Supervisors and Admins
+
+```typescript
+export async function GET(req: NextRequest) {
+  const result = await rbacMiddleware(req, ['ADMIN', 'SUPERVISOR']);
+  if (result instanceof NextResponse) {
+    return result;
+  }
+  
+  // Logic for Supervisors and Admins
+}
+```
+
+### Route accessible by all authenticated users
+
+```typescript
+export async function GET(req: NextRequest) {
+  const result = await rbacMiddleware(req, ['ADMIN', 'SUPERVISOR', 'USER']);
+  if (result instanceof NextResponse) {
+    return result;
+  }
+  
+  // Logic for all authenticated users
+}
+```
 
 ## Best Practices
 
-1. Always use the RBAC middleware for routes that require role-based protection.
-2. Be specific with the allowed roles. Only include the roles that absolutely need access to the route.
-3. For routes that all authenticated users should access, include all roles: ['USER', 'SUPERVISOR', 'ADMIN'].
-4. Remember to update the allowed roles if new roles are added to the system in the future.
-5. Combine the RBAC middleware with other security measures like input validation and output sanitization for comprehensive security.
+1. Always apply the RBAC middleware to routes that require role-based access control.
+2. Use the principle of least privilege: only grant the minimum required access for each route.
+3. Keep the allowed roles array up-to-date if new roles are added to the system.
+4. Combine the RBAC middleware with other security measures like input validation and output encoding.
+5. Regularly audit the usage of RBAC middleware to ensure it's applied consistently across the application.
 
 ## Troubleshooting
 
 If you encounter issues with the RBAC middleware:
 
-1. Ensure that the user's role is correctly set in the session/token.
-2. Check that the roles specified in the middleware match the roles defined in your system.
-3. Verify that the middleware is correctly imported and applied to the route.
+1. Ensure that the user's role is correctly set in the session during authentication.
+2. Check that the allowed roles array passed to the middleware is correct for each route.
+3. Verify that the middleware is imported and applied correctly in each route file.
+4. Review the server logs for any error messages related to RBAC or authentication.
 
-For any persistent issues, consult the error logs or contact the development team for assistance.
+By following these guidelines, you can effectively implement role-based access control across your application, ensuring that users only have access to the resources appropriate for their role.

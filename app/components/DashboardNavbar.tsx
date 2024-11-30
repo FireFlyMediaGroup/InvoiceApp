@@ -3,8 +3,17 @@ import Logo from '@/public/SkySpecs_Logo_Stacked_vertical.png';
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
+import { auth } from '@/app/utils/auth';
+import type { ExtendedUser } from '@/app/utils/auth';
 
-export function DashboardNavbar() {
+export async function DashboardNavbar() {
+  const session = await auth();
+  const user = session?.user as ExtendedUser | undefined;
+  const userRole = user?.role;
+
+  const isAdmin = userRole === 'ADMIN';
+  const isSupervisor = userRole === 'SUPERVISOR' || isAdmin;
+
   return (
     <nav className="flex items-center justify-between py-5 px-8 bg-white shadow-md">
       <Link href="/dashboard" className="flex items-center gap-2">
@@ -17,12 +26,19 @@ export function DashboardNavbar() {
         <Link href="/dashboard">
           <Button variant="ghost">Dashboard</Button>
         </Link>
-        <Link href="/dashboard/invoices">
-          <Button variant="ghost">Invoices</Button>
-        </Link>
+        {isSupervisor && (
+          <Link href="/dashboard/invoices">
+            <Button variant="ghost">Invoices</Button>
+          </Link>
+        )}
         <Link href="/dashboard/powra">
           <Button variant="ghost">POWRA</Button>
         </Link>
+        {isAdmin && (
+          <Link href="/admin">
+            <Button variant="ghost">Admin</Button>
+          </Link>
+        )}
       </div>
     </nav>
   );

@@ -18,16 +18,15 @@ const customLogger = (message: string, error?: unknown): void => {
 };
 
 // Extend the User type
-interface ExtendedUser extends User {
+export interface ExtendedUser extends User {
   isAllowed?: boolean;
   role?: 'USER' | 'SUPERVISOR' | 'ADMIN';
 }
 
 // Extend the Session type
-interface ExtendedSession extends Session {
+export interface ExtendedSession extends Session {
   user?: ExtendedUser;
 }
-
 // Custom error class for email sending failures
 class EmailSendError extends Error {
   constructor(message: string) {
@@ -356,3 +355,5 @@ export const authConfig: NextAuthConfig = {
 console.log('[NextAuth] Auth configuration initialized, creating handlers');
 export const { handlers, signIn, signOut, auth } = NextAuth(authConfig);
 console.log('[NextAuth] Handlers created and exported');
+
+

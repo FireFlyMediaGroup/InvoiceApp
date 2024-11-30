@@ -1,35 +1,31 @@
-import type { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { monitorRoleBasedAccess } from '../utils/monitoring';
 
-export async function rbacMiddleware(
-  req: NextRequest,
-  handler: (req: NextRequest) => Promise<NextResponse>,
+export function rbacMiddleware(
+  request: NextRequest,
+  handler: () => Promise<NextResponse>,
   allowedRoles: string[]
 ) {
-  const token = await getToken({ req });
+  return monitorRoleBasedAccess(async (req: NextRequest) => {
+    const session = JSON.parse(req.headers.get('X-User-Info') || '{}');
 
-  if (!token) {
-    // Redirect to login if there's no token
-    return Response.redirect(new URL('/login', req.url));
-  }
+    if (!session || !session.user) {
+      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
-  const userRole = token.role as string;
+    const userRole = session.user.role;
 
-  if (!allowedRoles.includes(userRole)) {
-    // Redirect to unauthorized page if the user's role is not in the allowed roles
-    return Response.redirect(new URL('/unauthorized', req.url));
-  }
+    if (!allowedRoles.includes(userRole)) {
+      return new NextResponse(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
-  // If the user has the correct role, continue to the handler
-  return handler(req);
+    return handler();
+  })(request);
 }
-
-// Example usage:
-// export default function MyProtectedRoute(req: NextRequest) {
-//   return rbacMiddleware(req, actualRouteHandler, ['ADMIN', 'SUPERVISOR']);
-// }
-// 
-// async function actualRouteHandler(req: NextRequest) {
-//   // Your route logic here
-//   return Response.json({ message: 'Protected data' });
-// }

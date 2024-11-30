@@ -20,6 +20,7 @@ const customLogger = (message: string, error?: unknown): void => {
 // Extend the User type
 interface ExtendedUser extends User {
   isAllowed?: boolean;
+  role?: 'USER' | 'SUPERVISOR' | 'ADMIN';
 }
 
 // Extend the Session type
@@ -261,6 +262,7 @@ export const authConfig: NextAuthConfig = {
         customLogger(`Attempting to find user in database: ${user.email}`);
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
+          select: { isAllowed: true, role: true },
         });
 
         if (!dbUser || !dbUser.isAllowed) {
@@ -268,7 +270,7 @@ export const authConfig: NextAuthConfig = {
           return true; // Always return true to show the verify card
         }
 
-        customLogger(`User authorized: ${user.email}`);
+        customLogger(`User authorized: ${user.email}, Role: ${dbUser.role}`);
         return true;
       } catch (error) {
         customLogger('Error during sign in:', error);
@@ -282,13 +284,45 @@ export const authConfig: NextAuthConfig = {
         extendedSession.user.id = user.id;
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
-          select: { isAllowed: true },
+          select: { isAllowed: true, role: true },
         });
         if (dbUser) {
           extendedSession.user.isAllowed = dbUser.isAllowed;
+          extendedSession.user.role = dbUser.role;
         }
       }
       return extendedSession;
+    },
+    async authorized({ request, auth }) {
+      const { pathname } = request.nextUrl;
+      const user = auth?.user as ExtendedUser;
+
+      // Define role-based access rules
+      const roleAccessRules = {
+        '/admin': ['ADMIN'],
+        '/supervisor': ['ADMIN', 'SUPERVISOR'],
+        '/user': ['ADMIN', 'SUPERVISOR', 'USER'],
+      };
+
+      // Check if the pathname requires specific role access
+      for (const [path, allowedRoles] of Object.entries(roleAccessRules)) {
+        if (pathname.startsWith(path)) {
+          if (!user?.role || !allowedRoles.includes(user.role)) {
+            customLogger(`Access denied for user ${user?.id} to ${pathname}`);
+            return false;
+          }
+          break;
+        }
+      }
+
+      // If no specific role check is needed, ensure the user is at least authenticated
+      if (!user) {
+        customLogger(`Unauthenticated access attempt to ${pathname}`);
+        return false;
+      }
+
+      customLogger(`Access granted for user ${user.id} to ${pathname}`);
+      return true;
     },
   },
   events: {

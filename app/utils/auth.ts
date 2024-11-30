@@ -118,12 +118,120 @@ export const authConfig: NextAuthConfig = {
         const { host } = new URL(url);
         const transport = nodemailer.createTransport(provider.server);
         try {
+          const brandColor = "#007bff";
+          const backgroundColor = "#f4f4f5";
+          const textColor = "#111827";
+          const buttonBackgroundColor = brandColor;
+          const buttonTextColor = "#ffffff";
+          const logoUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/SkySpecs_Logo_Stacked_vertical.png`;
+
           await transport.sendMail({
             to: identifier,
             from: provider.from,
             subject: `Sign in to ${host}`,
             text: `Sign in to ${host}\n\n${url}\n\n`,
-            html: `<p>Sign in to <strong>${host}</strong></p><p><a href="${url}">Sign in</a></p>`,
+            html: `
+<!DOCTYPE html>
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+  <title>Sign in to ${host}</title>
+  <!--[if mso]>
+  <xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+  <style>
+    td,th,div,p,a,h1,h2,h3,h4,h5,h6 {font-family: "Segoe UI", sans-serif; mso-line-height-rule: exactly;}
+  </style>
+  <![endif]-->
+  <style>
+    @media screen {
+      @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 400;
+        src: url('https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 600;
+        src: url('https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hiA.woff2') format('woff2');
+      }
+    }
+
+    .hover-scale {
+      transition: transform 0.15s ease-in-out;
+    }
+    .hover-scale:hover {
+      transform: scale(1.02);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .dark-mode-bg { background-color: ${backgroundColor} !important; }
+      .dark-mode-text { color: ${textColor} !important; }
+    }
+  </style>
+</head>
+<body class="dark-mode-bg" style="margin: 0; padding: 0; width: 100%; word-break: break-word; -webkit-font-smoothing: antialiased; background-color: #f4f4f5;">
+  <div role="article" aria-roledescription="email" aria-label="Sign in to ${host}" lang="en" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <table style="width: 100%;" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center" style="padding: 24px;">
+          <table style="width: 100%; max-width: 600px;" cellpadding="0" cellspacing="0" role="presentation">
+            <!-- Logo Section -->
+            <tr>
+              <td align="center" style="padding-bottom: 24px;">
+                <img src="${logoUrl}" alt="Logo" style="border: 0; height: 40px; width: auto;">
+                <h3 style="margin-top: 10px; font-size: 24px; font-weight: 600; line-height: normal;">
+                  Safety<span style="color: #007bff;">Docs</span>
+                </h3>
+              </td>
+            </tr>
+            <!-- Main Content -->
+            <tr>
+              <td style="padding: 32px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);" class="dark-mode-bg">
+                <h1 style="margin-top: 0; margin-bottom: 16px; color: #111827; font-size: 24px; font-weight: 600; text-align: center;" class="dark-mode-text">
+                  Sign in to ${host}
+                </h1>
+                <p style="margin: 0; margin-bottom: 24px; text-align: center; font-size: 16px; line-height: 24px; color: #4b5563;" class="dark-mode-text">
+                  Click the button below to securely sign in to your account. This link will expire in 24 hours.
+                </p>
+                <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
+                  <tr>
+                    <td style="mso-padding-alt: 16px 24px; background-color: ${buttonBackgroundColor}; border-radius: 6px;" class="hover-scale">
+                      <a href="${url}" 
+                         style="display: inline-block; padding: 16px 32px; font-size: 16px; font-weight: 600; line-height: 1; color: ${buttonTextColor}; text-decoration: none;">
+                        Sign in securely
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <!-- Security Notice -->
+                <table style="width: 100%; margin-top: 32px;" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr>
+                    <td style="padding: 16px; background-color: #f3f4f6; border-radius: 6px;" class="dark-mode-bg">
+                      <p style="margin: 0; text-align: center; font-size: 14px; line-height: 20px; color: #6b7280;" class="dark-mode-text">
+                        If you didn't request this email, you can safely ignore it. For security, this link can only be used once.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+                <!-- Footer -->
+                <p style="margin-top: 32px; margin-bottom: 0; text-align: center; font-size: 12px; line-height: 16px; color: #9ca3af;" class="dark-mode-text">
+                  © ${new Date().getFullYear()} ${host}. All rights reserved.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>`,
           });
           customLogger(`Magic link sent to: ${identifier}`);
         } catch (error) {

@@ -8,6 +8,7 @@ export type ControlMeasureInput = Omit<ControlMeasure, 'powraId'>;
 
 export type POWRAFormData = Omit<POWRA, 'createdAt' | 'updatedAt'> & {
   controlMeasures: ControlMeasureInput[];
+  controlMeasuresNeeded?: boolean;
 };
 
 export type POWRACreateInput = Omit<Prisma.POWRACreateInput, 'controlMeasures'> & {

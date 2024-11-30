@@ -79,6 +79,11 @@ export default function POWRAForm({
     }
   }, [powraId]);
 
+  useEffect(() => {
+    console.log('POWRAForm formData updated:', formData);
+    console.log('beforeStartChecklist:', formData.beforeStartChecklist);
+  }, [formData]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);

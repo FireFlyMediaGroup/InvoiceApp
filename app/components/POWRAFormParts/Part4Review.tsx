@@ -23,15 +23,12 @@ type Part4ReviewProps = {
 const REVIEW_ROW_IDS = ['review-1', 'review-2', 'review-3', 'review-4'] as const;
 type ReviewRowId = typeof REVIEW_ROW_IDS[number];
 
-/**
- * Part4Review component handles the "REVIEW" section of the POWRA form.
- * It allows users to input review details, indicate if lessons were learned,
- * and provide comments on the POWRA.
- */
 export default function Part4Review({
   formData,
   setFormData,
 }: Part4ReviewProps) {
+  console.log('Part4Review rendered with formData:', formData);
+
   const handleReviewChange = (id: ReviewRowId, field: 'name' | 'date', value: string) => {
     const index = REVIEW_ROW_IDS.indexOf(id);
     if (index === -1) {
@@ -40,23 +37,37 @@ export default function Part4Review({
     }
 
     setFormData((prev) => {
+      let updatedData: POWRAFormData;
       if (field === 'name') {
         const updatedNames = [...prev.reviewNames];
         updatedNames[index] = value;
-        return { ...prev, reviewNames: updatedNames };
+        updatedData = { ...prev, reviewNames: updatedNames };
+      } else {
+        const updatedDates = [...prev.reviewDates];
+        updatedDates[index] = new Date(value);
+        updatedData = { ...prev, reviewDates: updatedDates };
       }
-      const updatedDates = [...prev.reviewDates];
-      updatedDates[index] = new Date(value);
-      return { ...prev, reviewDates: updatedDates };
+      console.log(`Updated ${field} for review ${id}:`, updatedData);
+      return updatedData;
     });
   };
 
   const handleLessonsLearnedChange = (checked: boolean) => {
-    setFormData((prev) => ({ ...prev, lessonsLearned: checked }));
+    console.log('Lessons learned changed:', checked);
+    setFormData((prev) => {
+      const updatedData = { ...prev, lessonsLearned: checked };
+      console.log('Updated formData:', updatedData);
+      return updatedData;
+    });
   };
 
   const handleReviewCommentsChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, reviewComments: value || null }));
+    console.log('Review comments changed:', value);
+    setFormData((prev) => {
+      const updatedData = { ...prev, reviewComments: value || null };
+      console.log('Updated formData:', updatedData);
+      return updatedData;
+    });
   };
 
   return (

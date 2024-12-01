@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from 'react';
-import type { FormEvent, ChangeEvent } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
+import type { ReactNode, FormEvent, ChangeEvent } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { DeactivateUserForm } from './DeactivateUserForm';
+import { Users, UserPlus, UserMinus } from 'lucide-react';
 
 type Role = 'USER' | 'SUPERVISOR' | 'ADMIN';
 
@@ -20,6 +22,32 @@ interface NewUser {
 interface ModifyUser {
   email: string;
   newRole: Role;
+}
+
+interface CardWrapperProps {
+  title: string;
+  description: string;
+  icon: ReactNode;
+  children: ReactNode;
+}
+
+function CardWrapper({ title, description, icon, children }: CardWrapperProps) {
+  return (
+    <Card className="h-full transition-all hover:shadow-lg hover:-translate-y-1">
+      <CardHeader className="flex flex-row items-center space-x-4">
+        <div className="rounded-full bg-primary p-2 text-primary-foreground">
+          {icon}
+        </div>
+        <div>
+          <CardTitle className="text-xl">{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {children}
+      </CardContent>
+    </Card>
+  );
 }
 
 export function UserManagement() {
@@ -71,9 +99,12 @@ export function UserManagement() {
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">User Management</h2>
       {message && <p className="mb-4 text-blue-500">{message}</p>}
-      <div className="space-y-8">
-        <div>
-          <h3 className="text-xl font-semibold mb-2">Create New User</h3>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <CardWrapper
+          title="Create New User"
+          description="Add a new user to the system"
+          icon={<UserPlus className="h-6 w-6" />}
+        >
           <form onSubmit={handleCreateUser} className="space-y-4">
             <div>
               <Label htmlFor="newEmail">Email</Label>
@@ -111,16 +142,25 @@ export function UserManagement() {
                 value={newUser.role}
                 onValueChange={(value: Role) => setNewUser({ ...newUser, role: value })}
               >
-                <option value="USER">User</option>
-                <option value="SUPERVISOR">Supervisor</option>
-                <option value="ADMIN">Admin</option>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USER">User</SelectItem>
+                  <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                </SelectContent>
               </Select>
             </div>
-            <Button type="submit">Create User</Button>
+            <Button type="submit" className="w-full">Create User</Button>
           </form>
-        </div>
-        <div>
-          <h3 className="text-xl font-semibold mb-2">Modify User Role</h3>
+        </CardWrapper>
+
+        <CardWrapper
+          title="Modify User Role"
+          description="Change a user's role in the system"
+          icon={<Users className="h-6 w-6" />}
+        >
           <form onSubmit={handleModifyRole} className="space-y-4">
             <div>
               <Label htmlFor="modifyUserEmail">User Email</Label>
@@ -138,18 +178,27 @@ export function UserManagement() {
                 value={modifyUser.newRole}
                 onValueChange={(value: Role) => setModifyUser({ ...modifyUser, newRole: value })}
               >
-                <option value="USER">User</option>
-                <option value="SUPERVISOR">Supervisor</option>
-                <option value="ADMIN">Admin</option>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a new role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USER">User</SelectItem>
+                  <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                </SelectContent>
               </Select>
             </div>
-            <Button type="submit">Modify Role</Button>
+            <Button type="submit" className="w-full">Modify Role</Button>
           </form>
-        </div>
-        <div>
-          <h3 className="text-xl font-semibold mb-2">Deactivate User</h3>
+        </CardWrapper>
+
+        <CardWrapper
+          title="Deactivate User"
+          description="Remove a user from the system"
+          icon={<UserMinus className="h-6 w-6" />}
+        >
           <DeactivateUserForm />
-        </div>
+        </CardWrapper>
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '../../components/ui/skeleton';
 import { Suspense } from 'react';
 import { DashboardBlocks } from '../components/DashboardBlocks';
 import { EmptyState } from '../components/EmptyState';
 import { InvoiceGraph } from '../components/InvoiceGraph';
 import { RecentInvoices } from '../components/RecentInvoices';
-import { UserManagement } from '../components/UserManagement';
+import { AdminDashboardCards } from '../components/AdminDashboardCards';
 import prisma from '../utils/db';
 import { requireUser } from '../utils/hooks';
 import type { ExtendedUser } from '../utils/auth';
@@ -51,10 +51,12 @@ export default async function DashboardRoute() {
 
     return (
       <Suspense fallback={<Skeleton className="w-full h-full flex-1" />}>
-        <DashboardBlocks />
-        <div className="grid gap-4 lg:grid-cols-3 md:gap-8">
-          <InvoiceGraph />
-          <RecentInvoices />
+        <div className="space-y-6">
+          <DashboardBlocks />
+          <div className="grid gap-6 lg:grid-cols-3">
+            <InvoiceGraph />
+            <RecentInvoices />
+          </div>
         </div>
       </Suspense>
     );
@@ -62,9 +64,9 @@ export default async function DashboardRoute() {
 
   const renderAdminContent = () => {
     return (
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Admin Dashboard</h2>
-        <UserManagement />
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+        <AdminDashboardCards />
         {renderDashboardContent()}
       </div>
     );
@@ -72,18 +74,18 @@ export default async function DashboardRoute() {
 
   const renderSupervisorContent = () => {
     return (
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Supervisor Dashboard</h2>
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold">Supervisor Dashboard</h2>
         {renderDashboardContent()}
       </div>
     );
   };
 
   return (
-    <>
+    <div className="container mx-auto px-4 py-8">
       {user.role === 'ADMIN' && renderAdminContent()}
       {user.role === 'SUPERVISOR' && renderSupervisorContent()}
       {user.role === 'USER' && renderDashboardContent()}
-    </>
+    </div>
   );
 }

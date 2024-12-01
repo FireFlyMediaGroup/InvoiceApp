@@ -4,7 +4,7 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@/components/ui/chart';
+} from '../../components/ui/chart';
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 interface iAppProps {
@@ -23,7 +23,7 @@ export function Graph({ data }: iAppProps) {
           color: 'hsl(var(--primary))',
         },
       }}
-      className="min-h-[300px]"
+      className="h-full"
     >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>

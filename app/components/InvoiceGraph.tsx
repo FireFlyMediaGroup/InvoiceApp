@@ -63,15 +63,17 @@ export async function InvoiceGraph() {
   const data = await getInvoices(session.user?.id as string);
 
   return (
-    <Card className="lg:col-span-2">
+    <Card className="lg:col-span-2 h-full flex flex-col">
       <CardHeader>
         <CardTitle>Paid Invoices</CardTitle>
         <CardDescription>
           Invoices which have been paid in the last 30 days.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Graph data={data} />
+      <CardContent className="flex-grow">
+        <div className="w-full h-[300px]">
+          <Graph data={data} />
+        </div>
       </CardContent>
     </Card>
   );

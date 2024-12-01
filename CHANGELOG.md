@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Role-Based Access Control (RBAC) implementation
+  - New RBAC middleware (app/middleware/rbac.ts)
+  - RBAC implementation plan and summary documentation
+  - API routes for user management with RBAC
+- User management functionality
+  - Create User Form (app/components/CreateUserForm.tsx)
+  - Modify User Role Form (app/components/ModifyUserRoleForm.tsx)
+  - Deactivate User Form (app/components/DeactivateUserForm.tsx)
+  - User Management component (app/components/UserManagement.tsx)
+  - Admin Dashboard Cards (app/components/AdminDashboardCards.tsx)
+- New API routes for user management (app/api/users/route.ts, app/api/users/deactivate/route.ts)
+- Improved logging and monitoring (app/utils/monitoring.ts)
+- Additional testing for security and API routes (__tests__/security/, __tests__/api/)
 - Email verification functionality
 - New page for unauthorized access (app/unauthorized/page.tsx)
 - New page for email checking (app/check-email/page.tsx)
@@ -27,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated authentication process with RBAC integration
+- Improved database schema to support user roles and RBAC
+- Modified API routes to incorporate RBAC checks
+- Updated dashboard layout and navigation to reflect new user management features
+- Enhanced security measures across the application
 - Updated authentication process
 - Improved database utilities
 - Modified Prisma schema
@@ -34,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Modified Hero and Navbar components
 - Updated login page
 - Updated DashboardLinks component to include POWRA link
-- Updated import paths in POWRAForm component to use '@/components/ui'
+- Updated import paths in POWRAForm component to use 'components/ui'
 - Added "use client" directive to POWRAForm component to resolve server-side rendering issues
 - Updated POWRAForm component to include status field and match API structure
 - Modified POWRA API route to handle updated data structure
@@ -53,3 +71,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Development
 
 - Regenerated Prisma Client to recognize POWRA model correctly
+- Added comprehensive test suite for RBAC and user management features
+- Updated development documentation to reflect new RBAC and user management processes

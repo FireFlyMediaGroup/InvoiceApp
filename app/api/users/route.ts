@@ -60,25 +60,30 @@ export async function handlePOST(request: NextRequest) {
 
 async function handlePUT(request: NextRequest) {
   const body = await request.json();
-  const { id, newRole } = body;
+  const { email, newRole } = body;
 
-  if (!id || !newRole) {
+  if (!email || !newRole) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
   try {
+    const currentUser = await prisma.user.findUnique({ where: { email } });
+    
+    if (!currentUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
     // Check if this is the last admin
-    if (newRole !== 'ADMIN') {
+    if (newRole !== 'ADMIN' && currentUser.role === 'ADMIN') {
       const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
-      const currentUser = await prisma.user.findUnique({ where: { id } });
       
-      if (adminCount === 1 && currentUser?.role === 'ADMIN') {
+      if (adminCount === 1) {
         return NextResponse.json({ error: 'Cannot remove the last admin' }, { status: 400 });
       }
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id },
+      where: { email },
       data: { role: newRole },
     });
 
@@ -95,12 +100,12 @@ async function handlePUT(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error updating user role:', error);
-    logUserAction('User Role Update Failed', { id, newRole, error: (error as Error).message });
+    logUserAction('User Role Update Failed', { email, newRole, error: (error as Error).message });
     return NextResponse.json({ error: 'Failed to update user role' }, { status: 500 });
   }
 }
 
-async function handleDELETE(request: NextRequest) {
+async function handleDEACTIVATE(request: NextRequest) {
   const url = new URL(request.url);
   const id = url.searchParams.get('id');
 
@@ -109,30 +114,37 @@ async function handleDELETE(request: NextRequest) {
   }
 
   try {
-    const userToDelete = await prisma.user.findUnique({ where: { id } });
+    const userToDeactivate = await prisma.user.findUnique({ where: { id } });
 
-    if (!userToDelete) {
+    if (!userToDeactivate) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Check if this is the last admin
-    if (userToDelete.role === 'ADMIN') {
-      const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
+    if (!userToDeactivate.isAllowed) {
+      return NextResponse.json({ error: 'User is already deactivated' }, { status: 400 });
+    }
+
+    // Check if this is the last active admin
+    if (userToDeactivate.role === 'ADMIN') {
+      const activeAdminCount = await prisma.user.count({ where: { role: 'ADMIN', isAllowed: true } });
       
-      if (adminCount === 1) {
-        return NextResponse.json({ error: 'Cannot delete the last admin' }, { status: 400 });
+      if (activeAdminCount === 1) {
+        return NextResponse.json({ error: 'Cannot deactivate the last active admin' }, { status: 400 });
       }
     }
 
-    await prisma.user.delete({ where: { id } });
+    const deactivatedUser = await prisma.user.update({
+      where: { id },
+      data: { isAllowed: false },
+    });
 
-    logUserAction('User Deleted', { id: userToDelete.id, email: userToDelete.email, role: userToDelete.role });
+    logUserAction('User Deactivated', { id: deactivatedUser.id, email: deactivatedUser.email, role: deactivatedUser.role });
 
-    return NextResponse.json({ message: 'User deleted successfully' });
+    return NextResponse.json({ message: 'User deactivated successfully' });
   } catch (error) {
-    console.error('Error deleting user:', error);
-    logUserAction('User Deletion Failed', { id, error: (error as Error).message });
-    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+    console.error('Error deactivating user:', error);
+    logUserAction('User Deactivation Failed', { id, error: (error as Error).message });
+    return NextResponse.json({ error: 'Failed to deactivate user' }, { status: 500 });
   }
 }
 
@@ -142,5 +154,5 @@ export const POST = (request: NextRequest) =>
 export const PUT = (request: NextRequest) =>
   rbacMiddleware(request, () => handlePUT(request), ['ADMIN']);
 
-export const DELETE = (request: NextRequest) =>
-  rbacMiddleware(request, () => handleDELETE(request), ['ADMIN']);
+export const PATCH = (request: NextRequest) =>
+  rbacMiddleware(request, () => handleDEACTIVATE(request), ['ADMIN']);

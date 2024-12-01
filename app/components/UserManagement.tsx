@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { DeactivateUserForm } from './DeactivateUserForm';
 
 type Role = 'USER' | 'SUPERVISOR' | 'ADMIN';
 
@@ -17,13 +18,13 @@ interface NewUser {
 }
 
 interface ModifyUser {
-  id: string;
+  email: string;
   newRole: Role;
 }
 
 export function UserManagement() {
   const [newUser, setNewUser] = useState<NewUser>({ email: '', role: 'USER', firstName: '', lastName: '' });
-  const [modifyUser, setModifyUser] = useState<ModifyUser>({ id: '', newRole: 'USER' });
+  const [modifyUser, setModifyUser] = useState<ModifyUser>({ email: '', newRole: 'USER' });
   const [message, setMessage] = useState<string>('');
 
   const handleCreateUser = async (e: FormEvent<HTMLFormElement>) => {
@@ -57,7 +58,7 @@ export function UserManagement() {
       const data = await response.json();
       if (response.ok) {
         setMessage(`User role updated successfully: ${data.user.email}`);
-        setModifyUser({ id: '', newRole: 'USER' });
+        setModifyUser({ email: '', newRole: 'USER' });
       } else {
         setMessage(`Error: ${data.error}`);
       }
@@ -122,12 +123,12 @@ export function UserManagement() {
           <h3 className="text-xl font-semibold mb-2">Modify User Role</h3>
           <form onSubmit={handleModifyRole} className="space-y-4">
             <div>
-              <Label htmlFor="modifyUserId">User ID</Label>
+              <Label htmlFor="modifyUserEmail">User Email</Label>
               <Input
-                id="modifyUserId"
-                type="text"
-                value={modifyUser.id}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setModifyUser({ ...modifyUser, id: e.target.value })}
+                id="modifyUserEmail"
+                type="email"
+                value={modifyUser.email}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setModifyUser({ ...modifyUser, email: e.target.value })}
                 required
               />
             </div>
@@ -144,6 +145,10 @@ export function UserManagement() {
             </div>
             <Button type="submit">Modify Role</Button>
           </form>
+        </div>
+        <div>
+          <h3 className="text-xl font-semibold mb-2">Deactivate User</h3>
+          <DeactivateUserForm />
         </div>
       </div>
     </div>

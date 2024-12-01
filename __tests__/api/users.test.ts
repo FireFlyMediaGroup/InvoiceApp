@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import type { NextResponse } from 'next/server';
 import { POST, PUT } from '../../app/api/users/route';
+import { PATCH } from '../../app/api/users/deactivate/route';
 import prisma from '../../app/utils/db';
 import { signIn } from '../../app/utils/auth';
 
@@ -8,6 +9,8 @@ jest.mock('../../app/utils/db', () => ({
   user: {
     create: jest.fn(),
     update: jest.fn(),
+    findUnique: jest.fn(),
+    count: jest.fn(),
   },
 }));
 
@@ -91,12 +94,13 @@ describe('User Management API', () => {
         lastName: 'Doe',
       };
 
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({ ...mockUser, role: 'USER' });
       (prisma.user.update as jest.Mock).mockResolvedValue(mockUser);
 
       const req = new NextRequest('http://localhost:3000/api/users', {
         method: 'PUT',
         body: JSON.stringify({
-          id: '1',
+          email: 'test@example.com',
           newRole: 'SUPERVISOR',
         }),
       });
@@ -108,7 +112,7 @@ describe('User Management API', () => {
       expect(responseData.user).toEqual(expect.objectContaining(mockUser));
       expect(prisma.user.update).toHaveBeenCalledTimes(1);
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: '1' },
+        where: { email: 'test@example.com' },
         data: { role: 'SUPERVISOR' },
       });
     });
@@ -117,7 +121,7 @@ describe('User Management API', () => {
       const req = new NextRequest('http://localhost:3000/api/users', {
         method: 'PUT',
         body: JSON.stringify({
-          // Missing id and newRole
+          // Missing email and newRole
         }),
       });
 
@@ -126,6 +130,79 @@ describe('User Management API', () => {
 
       expect(response.status).toBe(400);
       expect(responseData.error).toBe('Missing required fields');
+    });
+  });
+
+  describe('PATCH /api/users/deactivate', () => {
+    it('should deactivate a user', async () => {
+      const mockUser = {
+        id: '1',
+        email: 'test@example.com',
+        role: 'USER',
+        isAllowed: true,
+      };
+
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.user.update as jest.Mock).mockResolvedValue({ ...mockUser, isAllowed: false });
+
+      const req = new NextRequest('http://localhost:3000/api/users/deactivate', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          email: 'test@example.com',
+        }),
+      });
+
+      const response = await PATCH(req);
+      const responseData = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(responseData.message).toBe('User deactivated successfully');
+      expect(prisma.user.update).toHaveBeenCalledTimes(1);
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { email: 'test@example.com' },
+        data: { isAllowed: false },
+      });
+    });
+
+    it('should return an error if the user is already deactivated', async () => {
+      const mockUser = {
+        id: '1',
+        email: 'test@example.com',
+        role: 'USER',
+        isAllowed: false,
+      };
+
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+
+      const req = new NextRequest('http://localhost:3000/api/users/deactivate', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          email: 'test@example.com',
+        }),
+      });
+
+      const response = await PATCH(req);
+      const responseData = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(responseData.error).toBe('User is already deactivated');
+    });
+
+    it('should return an error if the user is not found', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const req = new NextRequest('http://localhost:3000/api/users/deactivate', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          email: 'nonexistent@example.com',
+        }),
+      });
+
+      const response = await PATCH(req);
+      const responseData = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(responseData.error).toBe('User not found');
     });
   });
 });

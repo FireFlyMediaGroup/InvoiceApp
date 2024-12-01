@@ -1,7 +1,6 @@
 import { PrismaClient, Prisma, POWRAStatus } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from '../../utils/auth';
 import { z } from 'zod';
 import { rbacMiddleware } from '@/app/middleware/rbac';
 
@@ -13,12 +12,9 @@ declare global {
 const prismaClient = global.prisma ?? new PrismaClient();
 if (process.env.NODE_ENV !== 'production') global.prisma = prismaClient;
 
-async function getSession(request: NextRequest) {
-  const testAuth = request.headers.get('X-Test-Auth');
-  if (testAuth) {
-    return JSON.parse(testAuth);
-  }
-  return await auth();
+function getSession(request: NextRequest) {
+  const userInfo = request.headers.get('X-User-Info');
+  return userInfo ? JSON.parse(userInfo) : null;
 }
 
 const riskSchema = z.enum(['L', 'M', 'H']);
@@ -63,7 +59,7 @@ function logDebug(message: string, data?: unknown) {
 
 async function handleGET(request: NextRequest) {
   try {
-    const session = await getSession(request);
+    const session = getSession(request);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -105,7 +101,7 @@ async function handleGET(request: NextRequest) {
 
 async function handlePOST(request: NextRequest) {
   try {
-    const session = await getSession(request);
+    const session = getSession(request);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -117,13 +113,10 @@ async function handlePOST(request: NextRequest) {
     const validatedData = powraSchema.parse(body);
     logDebug('Validated data:', validatedData);
 
-    // For testing purposes, create a temporary user if it's a mock user ID
-    const userId = await ensureUserExists(session.user.id);
-
     const newPOWRA = await prismaClient.pOWRA.create({
       data: {
         ...validatedData,
-        user: { connect: { id: userId } },
+        user: { connect: { id: session.user.id } },
       },
       include: { controlMeasures: true },
     });
@@ -146,7 +139,7 @@ async function handlePOST(request: NextRequest) {
 
 async function handlePUT(request: NextRequest) {
   try {
-    const session = await getSession(request);
+    const session = getSession(request);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -162,14 +155,11 @@ async function handlePUT(request: NextRequest) {
     const body = await request.json();
     const validatedData = powraSchema.parse(body);
 
-    // For testing purposes, ensure the user exists
-    const userId = await ensureUserExists(session.user.id);
-
     const updatedPOWRA = await prismaClient.pOWRA.update({
       where: { id },
       data: {
         ...validatedData,
-        user: { connect: { id: userId } },
+        user: { connect: { id: session.user.id } },
       },
       include: { controlMeasures: true },
     });
@@ -189,7 +179,7 @@ async function handlePUT(request: NextRequest) {
 
 async function handleDELETE(request: NextRequest) {
   try {
-    const session = await getSession(request);
+    const session = getSession(request);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -214,26 +204,6 @@ async function handleDELETE(request: NextRequest) {
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
-
-async function ensureUserExists(userId: string): Promise<string> {
-  let user = await prismaClient.user.findUnique({ where: { id: userId } });
-  if (!user) {
-    if (userId === 'mock-test-user-id') {
-      // Create a temporary user for testing
-      user = await prismaClient.user.create({
-        data: {
-          id: userId,
-          email: 'test@example.com',
-          firstName: 'Test',
-          lastName: 'User',
-        },
-      });
-    } else {
-      throw new Error('User not found');
-    }
-  }
-  return user.id;
 }
 
 export const GET = (request: NextRequest) =>

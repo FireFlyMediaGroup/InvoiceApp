@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table';
 import { MoreHorizontal } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getSession } from 'next-auth/react';
 
 type POWRA = {
   id: string;
@@ -41,7 +42,17 @@ export default function POWRAList({ onEdit }: POWRAListProps) {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/powra');
+        const session = await getSession();
+        if (!session) {
+          throw new Error('No active session. Please log in and try again.');
+        }
+
+        const response = await fetch('/api/powra', {
+          headers: {
+            'X-User-Info': JSON.stringify(session),
+          },
+        });
+
         if (!response.ok) {
           const errorData = await response.json();
           if (response.status === 401) {
@@ -68,8 +79,16 @@ export default function POWRAList({ onEdit }: POWRAListProps) {
 
   const handleDelete = async (id: string) => {
     try {
+      const session = await getSession();
+      if (!session) {
+        throw new Error('No active session. Please log in and try again.');
+      }
+
       const response = await fetch(`/api/powra?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'X-User-Info': JSON.stringify(session),
+        },
       });
       if (!response.ok) {
         const errorData = await response.json();

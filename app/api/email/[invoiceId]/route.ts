@@ -7,16 +7,10 @@ import { rbacMiddleware } from '@/app/middleware/rbac';
 
 async function sendEmailReminder(
   request: NextRequest,
-  {
-    params,
-  }: {
-    params: { invoiceId: string };
-  }
+  invoiceId: string
 ) {
   try {
     const session = await requireUser();
-
-    const { invoiceId } = params;
 
     const invoiceData = await prisma.invoice.findUnique({
       where: {
@@ -58,5 +52,9 @@ async function sendEmailReminder(
   }
 }
 
-export const POST = (request: NextRequest, context: { params: { invoiceId: string } }) =>
-  rbacMiddleware(request, () => sendEmailReminder(request, context), ['USER', 'SUPERVISOR', 'ADMIN']);
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { invoiceId: string } }
+): Promise<NextResponse> {
+  return rbacMiddleware(request, () => sendEmailReminder(request, params.invoiceId), ['USER', 'SUPERVISOR', 'ADMIN']);
+}

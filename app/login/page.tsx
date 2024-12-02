@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -13,10 +12,6 @@ import { redirect } from 'next/navigation';
 import { SubmitButton } from '../components/SubmitButtons';
 import { auth, signIn } from '../utils/auth';
 
-interface LoginState {
-  message?: string;
-}
-
 export default async function Login() {
   const session = await auth();
 
@@ -28,23 +23,16 @@ export default async function Login() {
     'use server';
 
     const email = formData.get('email') as string;
-    console.log(`[Login] Attempting login for email: ${email}`);
 
     try {
       await signIn('nodemailer', formData);
-      console.log(`[Login] Login link sent successfully for email: ${email}`);
       redirect('/check-email');
     } catch (error: unknown) {
-      if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
-        console.log(
-          `[Login] Redirecting after successful login for email: ${email}`
-        );
-        throw error;
-      }
-
-      console.error(`[Login] Error during login for email: ${email}`, error);
-
       if (error instanceof Error) {
+        if (error.message.includes('NEXT_REDIRECT')) {
+          throw error;
+        }
+
         if (error.message.includes('User not found')) {
           throw new Error(
             'Account not found. Please contact your administrator.'

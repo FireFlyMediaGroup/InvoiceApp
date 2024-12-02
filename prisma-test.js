@@ -40,44 +40,28 @@ var client_1 = require("@prisma/client");
 var prisma = new client_1.PrismaClient();
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var userCount, error_1;
+        var users, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 3, 4, 6]);
-                    return [4 /*yield*/, prisma.$connect()];
+                    _a.trys.push([0, 2, 3, 5]);
+                    return [4 /*yield*/, prisma.user.findMany()];
                 case 1:
-                    _a.sent();
-                    return [4 /*yield*/, prisma.user.count()];
+                    users = _a.sent();
+                    console.log('Successfully connected to the database');
+                    console.log("Found ".concat(users.length, " users"));
+                    return [3 /*break*/, 5];
                 case 2:
-                    userCount = _a.sent();
-                    console.log("Connected successfully. User count: ".concat(userCount));
-                    return [3 /*break*/, 6];
-                case 3:
                     error_1 = _a.sent();
-                    console.error('Failed to connect to the database:', error_1);
-                    return [3 /*break*/, 6];
-                case 4: return [4 /*yield*/, prisma.$disconnect()];
-                case 5:
+                    console.error('Error connecting to the database:', error_1);
+                    return [3 /*break*/, 5];
+                case 3: return [4 /*yield*/, prisma.$disconnect()];
+                case 4:
                     _a.sent();
                     return [7 /*endfinally*/];
-                case 6: return [2 /*return*/];
+                case 5: return [2 /*return*/];
             }
         });
     });
 }
-main()
-    .catch(function (e) {
-    console.error(e);
-    process.exit(1);
-})
-    .finally(function () { return __awaiter(void 0, void 0, void 0, function () {
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, prisma.$disconnect()];
-            case 1:
-                _a.sent();
-                return [2 /*return*/];
-        }
-    });
-}); });
+main();

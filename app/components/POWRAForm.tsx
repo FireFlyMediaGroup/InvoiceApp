@@ -79,11 +79,6 @@ export default function POWRAForm({
     }
   }, [powraId]);
 
-  useEffect(() => {
-    console.log('POWRAForm formData updated:', formData);
-    console.log('beforeStartChecklist:', formData.beforeStartChecklist);
-  }, [formData]);
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -146,7 +141,11 @@ export default function POWRAForm({
         const createBody: POWRACreateInput = {
           ...commonData,
           controlMeasures: {
-            create: formData.controlMeasures.map(({ id, ...cm }) => cm),
+            create: formData.controlMeasures.map(({ hazardNo, measures, risk }) => ({
+              hazardNo,
+              measures,
+              risk,
+            })),
           },
           user: {
             connect: { id: formData.userId },

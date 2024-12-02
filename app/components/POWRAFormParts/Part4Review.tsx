@@ -27,47 +27,28 @@ export default function Part4Review({
   formData,
   setFormData,
 }: Part4ReviewProps) {
-  console.log('Part4Review rendered with formData:', formData);
-
   const handleReviewChange = (id: ReviewRowId, field: 'name' | 'date', value: string) => {
     const index = REVIEW_ROW_IDS.indexOf(id);
-    if (index === -1) {
-      console.error(`Invalid review id: ${id}`);
-      return;
-    }
+    if (index === -1) return;
 
     setFormData((prev) => {
-      let updatedData: POWRAFormData;
       if (field === 'name') {
         const updatedNames = [...prev.reviewNames];
         updatedNames[index] = value;
-        updatedData = { ...prev, reviewNames: updatedNames };
-      } else {
-        const updatedDates = [...prev.reviewDates];
-        updatedDates[index] = new Date(value);
-        updatedData = { ...prev, reviewDates: updatedDates };
+        return { ...prev, reviewNames: updatedNames };
       }
-      console.log(`Updated ${field} for review ${id}:`, updatedData);
-      return updatedData;
+      const updatedDates = [...prev.reviewDates];
+      updatedDates[index] = new Date(value);
+      return { ...prev, reviewDates: updatedDates };
     });
   };
 
   const handleLessonsLearnedChange = (checked: boolean) => {
-    console.log('Lessons learned changed:', checked);
-    setFormData((prev) => {
-      const updatedData = { ...prev, lessonsLearned: checked };
-      console.log('Updated formData:', updatedData);
-      return updatedData;
-    });
+    setFormData((prev) => ({ ...prev, lessonsLearned: checked }));
   };
 
   const handleReviewCommentsChange = (value: string) => {
-    console.log('Review comments changed:', value);
-    setFormData((prev) => {
-      const updatedData = { ...prev, reviewComments: value || null };
-      console.log('Updated formData:', updatedData);
-      return updatedData;
-    });
+    setFormData((prev) => ({ ...prev, reviewComments: value || null }));
   };
 
   return (

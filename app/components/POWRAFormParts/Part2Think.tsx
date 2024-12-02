@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -26,26 +26,16 @@ type ChecklistItem = typeof checklistItems[number];
 const generateId = (text: string) => text.replace(/\s+/g, '-').toLowerCase();
 
 const Part2Think: React.FC<Part2ThinkProps> = React.memo(({ formData, setFormData }) => {
-  useEffect(() => {
-    console.log('Part2Think formData changed:', formData);
-    console.log('Current beforeStartChecklist:', formData.beforeStartChecklist);
-  }, [formData]);
-
   const handleChecklistChange = useCallback((item: ChecklistItem, checked: boolean) => {
-    console.log('Checkbox changed:', item, checked);
     setFormData((prev) => {
       const newChecklist = checked
         ? [...prev.beforeStartChecklist, item]
         : prev.beforeStartChecklist.filter((i) => i !== item);
       
-      console.log('New checklist:', newChecklist);
-      
-      const newFormData = {
+      return {
         ...prev,
         beforeStartChecklist: newChecklist,
       };
-      console.log('New formData:', newFormData);
-      return newFormData;
     });
   }, [setFormData]);
 
@@ -60,7 +50,6 @@ const Part2Think: React.FC<Part2ThinkProps> = React.memo(({ formData, setFormDat
         {checklistItems.map((item) => {
           const id = generateId(item);
           const isChecked = formData.beforeStartChecklist.includes(item);
-          console.log(`Rendering checkbox for ${item}, checked: ${isChecked}`);
           return (
             <div key={id} className="flex items-center space-x-2">
               <Checkbox

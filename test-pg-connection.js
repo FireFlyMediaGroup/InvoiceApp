@@ -1,4 +1,8 @@
 "use strict";
+var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
+    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+    return cooked;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -37,25 +41,31 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var client_1 = require("@prisma/client");
-var prisma = new client_1.PrismaClient();
-function main() {
+var dotenv = require("dotenv");
+dotenv.config();
+var prisma = new client_1.PrismaClient({
+    log: ['query', 'info', 'warn', 'error'],
+});
+function testConnection() {
     return __awaiter(this, void 0, void 0, function () {
-        var userCount, error_1;
+        var result, userCount, err_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 3, 4, 6]);
-                    return [4 /*yield*/, prisma.$connect()];
+                    console.log('Attempting to connect to the database...');
+                    return [4 /*yield*/, prisma.$queryRaw(templateObject_1 || (templateObject_1 = __makeTemplateObject(["SELECT NOW()"], ["SELECT NOW()"])))];
                 case 1:
-                    _a.sent();
+                    result = _a.sent();
+                    console.log('Connected successfully. Current time:', result[0].now);
                     return [4 /*yield*/, prisma.user.count()];
                 case 2:
                     userCount = _a.sent();
-                    console.log("Connected successfully. User count: ".concat(userCount));
+                    console.log('User count:', userCount);
                     return [3 /*break*/, 6];
                 case 3:
-                    error_1 = _a.sent();
-                    console.error('Failed to connect to the database:', error_1);
+                    err_1 = _a.sent();
+                    console.error('Error connecting to the database:', err_1);
                     return [3 /*break*/, 6];
                 case 4: return [4 /*yield*/, prisma.$disconnect()];
                 case 5:
@@ -66,18 +76,5 @@ function main() {
         });
     });
 }
-main()
-    .catch(function (e) {
-    console.error(e);
-    process.exit(1);
-})
-    .finally(function () { return __awaiter(void 0, void 0, void 0, function () {
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, prisma.$disconnect()];
-            case 1:
-                _a.sent();
-                return [2 /*return*/];
-        }
-    });
-}); });
+testConnection();
+var templateObject_1;

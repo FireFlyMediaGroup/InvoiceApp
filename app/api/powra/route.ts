@@ -2,7 +2,7 @@ import { PrismaClient, Prisma, POWRAStatus } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { rbacMiddleware } from '@/app/middleware/rbac';
+import { rbacMiddleware } from "app/middleware/rbac";
 
 declare global {
   // eslint-disable-next-line no-var

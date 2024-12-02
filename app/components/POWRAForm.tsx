@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import Part1Stop from './POWRAFormParts/Part1Stop';
 import Part2Think from './POWRAFormParts/Part2Think';
 import Part3Act from './POWRAFormParts/Part3Act';
 import Part4Review from './POWRAFormParts/Part4Review';
-import type { POWRAFormData, POWRAApiInput, POWRACreateInput, POWRAUpdateInput } from './POWRAFormParts/POWRAFormData';
+import type { POWRAFormData, POWRAApiInput, POWRACreateInput, POWRAUpdateInput, POWRAStatus } from './POWRAFormParts/POWRAFormData';
 
 const initialFormData: POWRAFormData = {
   id: '',
@@ -25,7 +26,7 @@ const initialFormData: POWRAFormData = {
   reviewDates: [new Date(), new Date(), new Date(), new Date()],
   lessonsLearned: false,
   reviewComments: null,
-  userId: '',
+  userId: '', // Add this line to match the imported POWRAFormData type
 };
 
 const validateFormData = (data: POWRAFormData): string | null => {
@@ -48,19 +49,25 @@ export default function POWRAForm({
   powraId: string | null;
   onClose: () => void;
 }) {
+  const { data: session, status } = useSession();
   const [formData, setFormData] = useState<POWRAFormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (powraId) {
+    if (powraId && status === 'authenticated') {
       setIsLoading(true);
       setError(null);
 
       const fetchPOWRA = async () => {
         try {
-          const response = await fetch(`/api/powra?id=${powraId}`);
+          const response = await fetch(`/api/powra?id=${powraId}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-User-Info': JSON.stringify(session),
+            },
+          });
           if (!response.ok) throw new Error('Failed to fetch POWRA');
           const data = await response.json();
           setFormData({
@@ -77,10 +84,15 @@ export default function POWRAForm({
 
       fetchPOWRA();
     }
-  }, [powraId]);
+  }, [powraId, session, status]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (status !== 'authenticated' || !session?.user?.id) {
+      setError('You must be logged in to submit a POWRA');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setSuccessMessage(null);
@@ -99,7 +111,7 @@ export default function POWRAForm({
       let body: POWRAApiInput;
 
       const commonData = {
-        status: formData.status,
+        status: formData.status as POWRAStatus,
         site: formData.site,
         date: formData.date,
         time: formData.time,
@@ -132,7 +144,7 @@ export default function POWRAForm({
               },
             })),
             deleteMany: {
-              id: { notIn: formData.controlMeasures.map((cm) => cm.id) },
+              id: { notIn: formData.controlMeasures.map((cm) => cm.id || '') },
             },
           },
         };
@@ -148,7 +160,7 @@ export default function POWRAForm({
             })),
           },
           user: {
-            connect: { id: formData.userId },
+            connect: { id: session.user.id },
           },
         };
         body = createBody;
@@ -156,7 +168,10 @@ export default function POWRAForm({
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Info': JSON.stringify(session),
+        },
         body: JSON.stringify(body),
       });
 
@@ -176,6 +191,14 @@ export default function POWRAForm({
       setIsLoading(false);
     }
   };
+
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (status === 'unauthenticated') {
+    return <div>You must be logged in to access this form.</div>;
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto p-6">

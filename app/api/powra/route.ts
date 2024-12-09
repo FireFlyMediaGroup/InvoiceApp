@@ -13,8 +13,21 @@ const prismaClient = global.prisma ?? new PrismaClient();
 if (process.env.NODE_ENV !== 'production') global.prisma = prismaClient;
 
 function getSession(request: NextRequest) {
+  console.log('[getSession] Request headers:', request.headers);
   const userInfo = request.headers.get('X-User-Info');
-  return userInfo ? JSON.parse(userInfo) : null;
+  console.log('[getSession] X-User-Info header:', userInfo);
+  if (!userInfo) {
+    console.error('[getSession] No X-User-Info header found');
+    return null;
+  }
+  try {
+    const session = JSON.parse(userInfo);
+    console.log('[getSession] Parsed session:', session);
+    return session;
+  } catch (error) {
+    console.error('[getSession] Error parsing X-User-Info header:', error);
+    return null;
+  }
 }
 
 const riskSchema = z.enum(['L', 'M', 'H']);
@@ -59,9 +72,13 @@ function logDebug(message: string, data?: unknown) {
 
 async function handleGET(request: NextRequest) {
   try {
+    console.log('[handleGET] Started');
+    logDebug('Handling GET request', { url: request.url });
     const session = getSession(request);
+    logDebug('Session', session);
 
     if (!session || !session.user) {
+      logDebug('Unauthorized: No valid session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -70,19 +87,25 @@ async function handleGET(request: NextRequest) {
     const page = Math.max(Number.parseInt(url.searchParams.get('page') || '1', 10), 1);
     const pageSize = Math.min(Math.max(Number.parseInt(url.searchParams.get('pageSize') || '10', 10), 1), 100);
 
+    logDebug('Query parameters', { id, page, pageSize });
+
     if (id) {
+      logDebug('Fetching single POWRA', { id });
       const powra = await prismaClient.pOWRA.findUnique({
         where: { id },
         include: { controlMeasures: true },
       });
 
       if (!powra) {
+        logDebug('POWRA not found', { id });
         return NextResponse.json({ error: 'POWRA not found' }, { status: 404 });
       }
 
+      logDebug('POWRA found', powra);
       return NextResponse.json(powra);
     }
 
+    logDebug('Fetching multiple POWRAs', { userId: session.user.id, page, pageSize });
     const powras = await prismaClient.pOWRA.findMany({
       where: { userId: session.user.id },
       include: { controlMeasures: true },
@@ -92,15 +115,17 @@ async function handleGET(request: NextRequest) {
 
     const total = await prismaClient.pOWRA.count({ where: { userId: session.user.id } });
 
+    logDebug('POWRAs fetched', { count: powras.length, total });
     return NextResponse.json({ data: powras, total, page, pageSize });
   } catch (error) {
-    logDebug('Error in GET /api/powra:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('[handleGET] Error:', error);
+    return NextResponse.json({ error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }
 
 async function handlePOST(request: NextRequest) {
   try {
+    console.log('[handlePOST] Started');
     const session = getSession(request);
 
     if (!session || !session.user) {
@@ -125,7 +150,7 @@ async function handlePOST(request: NextRequest) {
 
     return NextResponse.json(newPOWRA, { status: 201 });
   } catch (error) {
-    logDebug('Error in POST /api/powra:', error);
+    console.error('[handlePOST] Error:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
     }
@@ -133,12 +158,13 @@ async function handlePOST(request: NextRequest) {
       logDebug('Prisma error:', { code: error.code, message: error.message, meta: error.meta });
       return NextResponse.json({ error: 'Database error', details: error.message }, { status: 500 });
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }
 
 async function handlePUT(request: NextRequest) {
   try {
+    console.log('[handlePUT] Started');
     const session = getSession(request);
 
     if (!session || !session.user) {
@@ -166,19 +192,20 @@ async function handlePUT(request: NextRequest) {
 
     return NextResponse.json(updatedPOWRA);
   } catch (error) {
-    logDebug('Error in PUT /api/powra:', error);
+    console.error('[handlePUT] Error:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
     }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'POWRA not found' }, { status: 404 });
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }
 
 async function handleDELETE(request: NextRequest) {
   try {
+    console.log('[handleDELETE] Started');
     const session = getSession(request);
 
     if (!session || !session.user) {
@@ -198,22 +225,15 @@ async function handleDELETE(request: NextRequest) {
 
     return NextResponse.json({ message: 'POWRA deleted successfully' });
   } catch (error) {
-    logDebug('Error in DELETE /api/powra:', error);
+    console.error('[handleDELETE] Error:', error);
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'POWRA not found' }, { status: 404 });
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }
 
-export const GET = (request: NextRequest) =>
-  rbacMiddleware(request, () => handleGET(request), ['USER', 'SUPERVISOR', 'ADMIN']);
-
-export const POST = (request: NextRequest) =>
-  rbacMiddleware(request, () => handlePOST(request), ['USER', 'SUPERVISOR', 'ADMIN']);
-
-export const PUT = (request: NextRequest) =>
-  rbacMiddleware(request, () => handlePUT(request), ['USER', 'SUPERVISOR', 'ADMIN']);
-
-export const DELETE = (request: NextRequest) =>
-  rbacMiddleware(request, () => handleDELETE(request), ['SUPERVISOR', 'ADMIN']);
+export const GET = rbacMiddleware(handleGET, ['USER', 'SUPERVISOR', 'ADMIN']);
+export const POST = rbacMiddleware(handlePOST, ['USER', 'SUPERVISOR', 'ADMIN']);
+export const PUT = rbacMiddleware(handlePUT, ['USER', 'SUPERVISOR', 'ADMIN']);
+export const DELETE = rbacMiddleware(handleDELETE, ['SUPERVISOR', 'ADMIN']);

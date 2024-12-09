@@ -1,3 +1,4 @@
+"use strict";
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -45,7 +46,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var _this = this;
+Object.defineProperty(exports, "__esModule", { value: true });
+var node_fetch_1 = require("node-fetch");
+console.log("Script started: ".concat(new Date().toISOString()));
 var BASE_URL = 'http://localhost:3000/api/powra';
 function isPOWRA(obj) {
     if (typeof obj !== 'object' || obj === null) {
@@ -53,7 +56,7 @@ function isPOWRA(obj) {
     }
     var powra = obj;
     return (typeof powra.id === 'string' &&
-        typeof powra.status === 'string' &&
+        ['DRAFT', 'SUBMITTED', 'APPROVED'].includes(powra.status) &&
         typeof powra.site === 'string' &&
         typeof powra.date === 'string' &&
         typeof powra.time === 'string' &&
@@ -65,31 +68,113 @@ function isPOWRA(obj) {
         Array.isArray(powra.controlMeasures) &&
         Array.isArray(powra.reviewNames) &&
         Array.isArray(powra.reviewDates) &&
-        typeof powra.lessonsLearned === 'boolean');
+        typeof powra.lessonsLearned === 'boolean' &&
+        typeof powra.userId === 'string' &&
+        typeof powra.createdAt === 'string' &&
+        typeof powra.updatedAt === 'string');
 }
-var testPOWRAAPI = function () { return __awaiter(_this, void 0, void 0, function () {
-    var fetch_1, getAllResponse, _a, _b, _c, newPOWRA, createResponse, createdPOWRAData, createdPOWRA, getOneResponse, _d, _e, _f, updatedPOWRA, updateResponse, _g, _h, _j, deleteResponse, _k, _l, _m, error_1;
-    return __generator(this, function (_o) {
-        switch (_o.label) {
+function fetchWithTimeout(url_1, options_1) {
+    return __awaiter(this, arguments, void 0, function (url, options, timeout) {
+        var controller, id, response;
+        if (timeout === void 0) { timeout = 5000; }
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    controller = new AbortController();
+                    id = setTimeout(function () { return controller.abort(); }, timeout);
+                    return [4 /*yield*/, (0, node_fetch_1.default)(url, __assign(__assign({}, options), { signal: controller.signal }))];
+                case 1:
+                    response = _a.sent();
+                    clearTimeout(id);
+                    return [2 /*return*/, response];
+            }
+        });
+    });
+}
+function retryFetch(url_1, options_1) {
+    return __awaiter(this, arguments, void 0, function (url, options, retries) {
+        var err_1;
+        if (retries === void 0) { retries = 3; }
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, fetchWithTimeout(url, options)];
+                case 1: return [2 /*return*/, _a.sent()];
+                case 2:
+                    err_1 = _a.sent();
+                    if (retries > 0) {
+                        console.log("Retrying... (".concat(retries, " attempts left)"));
+                        return [2 /*return*/, retryFetch(url, options, retries - 1)];
+                    }
+                    throw err_1;
+                case 3: return [2 /*return*/];
+            }
+        });
+    });
+}
+function createMockTestUser() {
+    return 'mock-test-user-id';
+}
+function logResponse(response, operation) {
+    return __awaiter(this, void 0, void 0, function () {
+        var responseText, responseData;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    console.log("".concat(operation, " status:"), response.status);
+                    console.log("".concat(operation, " headers:"), response.headers.raw());
+                    return [4 /*yield*/, response.text()];
+                case 1:
+                    responseText = _a.sent();
+                    console.log("".concat(operation, " response body:"), responseText);
+                    try {
+                        responseData = JSON.parse(responseText);
+                        console.log("".concat(operation, " parsed response:"), responseData);
+                        return [2 /*return*/, responseData];
+                    }
+                    catch (error) {
+                        console.error("Error parsing ".concat(operation, " response:"), error);
+                        return [2 /*return*/, null];
+                    }
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+var testPOWRAAPI = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var error_1, testUserId, getAllResponse, newPOWRA, createResponse, createdPOWRAData, createdPOWRA, getOneResponse, updatedPOWRA, updateResponse, deleteResponse, error_2;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
             case 0:
-                _o.trys.push([0, 12, , 13]);
-                return [4 /*yield*/, Promise.resolve().then(function () { return require('node-fetch'); })];
+                _a.trys.push([0, 15, , 16]);
+                console.log('Starting POWRA API test...');
+                _a.label = 1;
             case 1:
-                fetch_1 = (_o.sent()).default;
-                // Test GET all POWRAs
-                console.log('Testing GET all POWRAs');
-                return [4 /*yield*/, fetch_1(BASE_URL, {
-                        method: 'GET',
-                        headers: { 'X-Test-Auth': JSON.stringify({ user: { id: 'test-user-id' } }) },
-                    })];
+                _a.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, (0, node_fetch_1.default)('https://www.google.com')];
             case 2:
-                getAllResponse = _o.sent();
-                console.log('GET all status:', getAllResponse.status);
-                _b = (_a = console).log;
-                _c = ['GET all response:'];
-                return [4 /*yield*/, getAllResponse.json()];
+                _a.sent();
+                console.log('Network connectivity: OK');
+                return [3 /*break*/, 4];
             case 3:
-                _b.apply(_a, _c.concat([_o.sent()]));
+                error_1 = _a.sent();
+                console.error('Network connectivity issue:', error_1);
+                return [2 /*return*/];
+            case 4:
+                testUserId = createMockTestUser();
+                console.log('Mock test user created with ID:', testUserId);
+                // Test GET all POWRAs
+                console.log('\nTesting GET all POWRAs');
+                return [4 /*yield*/, retryFetch(BASE_URL, {
+                        method: 'GET',
+                        headers: { 'X-Test-Auth': JSON.stringify({ user: { id: testUserId } }) },
+                    })];
+            case 5:
+                getAllResponse = _a.sent();
+                return [4 /*yield*/, logResponse(getAllResponse, 'GET all')];
+            case 6:
+                _a.sent();
                 // Test POST (Create) POWRA
                 console.log('\nTesting POST POWRA');
                 newPOWRA = {
@@ -102,27 +187,29 @@ var testPOWRAAPI = function () { return __awaiter(_this, void 0, void 0, functio
                     chiefPilot: 'Test Chief Pilot',
                     hse: 'Test HSE',
                     beforeStartChecklist: ['Item 1', 'Item 2'],
-                    controlMeasures: [
-                        { hazardNo: '1', measures: 'Test Measure', risk: 'L' },
-                    ],
+                    controlMeasures: {
+                        create: [
+                            { hazardNo: '1', measures: 'Test Measure', risk: 'L' },
+                        ],
+                    },
                     reviewNames: ['Reviewer 1'],
                     reviewDates: [new Date().toISOString()],
                     lessonsLearned: false,
                 };
-                return [4 /*yield*/, fetch_1(BASE_URL, {
+                console.log('Sending POST request with data:', JSON.stringify(newPOWRA));
+                return [4 /*yield*/, retryFetch(BASE_URL, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-Test-Auth': JSON.stringify({ user: { id: 'test-user-id' } }),
+                            'X-Test-Auth': JSON.stringify({ user: { id: testUserId } }),
                         },
                         body: JSON.stringify(newPOWRA),
                     })];
-            case 4:
-                createResponse = _o.sent();
-                console.log('POST status:', createResponse.status);
-                return [4 /*yield*/, createResponse.json()];
-            case 5:
-                createdPOWRAData = _o.sent();
+            case 7:
+                createResponse = _a.sent();
+                return [4 /*yield*/, logResponse(createResponse, 'POST')];
+            case 8:
+                createdPOWRAData = _a.sent();
                 if (!isPOWRA(createdPOWRAData)) {
                     throw new Error('Invalid POWRA data received from server');
                 }
@@ -130,58 +217,63 @@ var testPOWRAAPI = function () { return __awaiter(_this, void 0, void 0, functio
                 console.log('Created POWRA:', createdPOWRA);
                 // Test GET single POWRA
                 console.log('\nTesting GET single POWRA');
-                return [4 /*yield*/, fetch_1("".concat(BASE_URL, "?id=").concat(createdPOWRA.id), {
+                return [4 /*yield*/, retryFetch("".concat(BASE_URL, "?id=").concat(createdPOWRA.id), {
                         method: 'GET',
-                        headers: { 'X-Test-Auth': JSON.stringify({ user: { id: 'test-user-id' } }) },
+                        headers: { 'X-Test-Auth': JSON.stringify({ user: { id: testUserId } }) },
                     })];
-            case 6:
-                getOneResponse = _o.sent();
-                console.log('GET one status:', getOneResponse.status);
-                _e = (_d = console).log;
-                _f = ['GET one response:'];
-                return [4 /*yield*/, getOneResponse.json()];
-            case 7:
-                _e.apply(_d, _f.concat([_o.sent()]));
+            case 9:
+                getOneResponse = _a.sent();
+                return [4 /*yield*/, logResponse(getOneResponse, 'GET one')];
+            case 10:
+                _a.sent();
                 // Test PUT (Update) POWRA
                 console.log('\nTesting PUT POWRA');
-                updatedPOWRA = __assign(__assign({}, createdPOWRA), { site: 'Updated Test Site' });
-                return [4 /*yield*/, fetch_1("".concat(BASE_URL, "?id=").concat(createdPOWRA.id), {
+                updatedPOWRA = __assign(__assign({}, createdPOWRA), { site: 'Updated Test Site', controlMeasures: {
+                        upsert: createdPOWRA.controlMeasures.map(function (cm) { return ({
+                            where: { id: cm.id },
+                            update: cm,
+                            create: cm,
+                        }); }),
+                    } });
+                console.log('Sending PUT request with data:', JSON.stringify(updatedPOWRA));
+                return [4 /*yield*/, retryFetch("".concat(BASE_URL, "?id=").concat(createdPOWRA.id), {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-Test-Auth': JSON.stringify({ user: { id: 'test-user-id' } }),
+                            'X-Test-Auth': JSON.stringify({ user: { id: testUserId } }),
                         },
                         body: JSON.stringify(updatedPOWRA),
                     })];
-            case 8:
-                updateResponse = _o.sent();
-                console.log('PUT status:', updateResponse.status);
-                _h = (_g = console).log;
-                _j = ['Updated POWRA:'];
-                return [4 /*yield*/, updateResponse.json()];
-            case 9:
-                _h.apply(_g, _j.concat([_o.sent()]));
+            case 11:
+                updateResponse = _a.sent();
+                return [4 /*yield*/, logResponse(updateResponse, 'PUT')];
+            case 12:
+                _a.sent();
                 // Test DELETE POWRA
                 console.log('\nTesting DELETE POWRA');
-                return [4 /*yield*/, fetch_1("".concat(BASE_URL, "?id=").concat(createdPOWRA.id), {
+                return [4 /*yield*/, retryFetch("".concat(BASE_URL, "?id=").concat(createdPOWRA.id), {
                         method: 'DELETE',
-                        headers: { 'X-Test-Auth': JSON.stringify({ user: { id: 'test-user-id' } }) },
+                        headers: { 'X-Test-Auth': JSON.stringify({ user: { id: testUserId } }) },
                     })];
-            case 10:
-                deleteResponse = _o.sent();
-                console.log('DELETE status:', deleteResponse.status);
-                _l = (_k = console).log;
-                _m = ['DELETE response:'];
-                return [4 /*yield*/, deleteResponse.json()];
-            case 11:
-                _l.apply(_k, _m.concat([_o.sent()]));
-                return [3 /*break*/, 13];
-            case 12:
-                error_1 = _o.sent();
-                console.error('Error during API testing:', error_1);
-                return [3 /*break*/, 13];
-            case 13: return [2 /*return*/];
+            case 13:
+                deleteResponse = _a.sent();
+                return [4 /*yield*/, logResponse(deleteResponse, 'DELETE')];
+            case 14:
+                _a.sent();
+                console.log('POWRA API test completed successfully.');
+                return [3 /*break*/, 16];
+            case 15:
+                error_2 = _a.sent();
+                console.error('Error during API testing:', error_2);
+                if (error_2 instanceof Error) {
+                    console.error('Error name:', error_2.name);
+                    console.error('Error message:', error_2.message);
+                    console.error('Error stack:', error_2.stack);
+                }
+                return [3 /*break*/, 16];
+            case 16: return [2 /*return*/];
         }
     });
 }); };
-testPOWRAAPI();
+console.log('Starting test script...');
+testPOWRAAPI().then(function () { return console.log('Test script finished.'); });

@@ -37,31 +37,61 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var client_1 = require("@prisma/client");
-var prisma = new client_1.PrismaClient();
+var dotenv = require("dotenv");
+dotenv.config();
+// Log the DATABASE_URL (make sure to redact sensitive information)
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+var prisma = new client_1.PrismaClient({
+    log: ['query', 'info', 'warn', 'error'],
+});
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var users, error_1;
+        var fplMissions, error_1, riskMatrices, error_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 2, 3, 5]);
-                    return [4 /*yield*/, prisma.user.findMany()];
+                    console.log('Available models in Prisma client:');
+                    console.log(Object.keys(prisma));
+                    _a.label = 1;
                 case 1:
-                    users = _a.sent();
-                    console.log('Successfully connected to the database');
-                    console.log("Found ".concat(users.length, " users"));
-                    return [3 /*break*/, 5];
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, prisma.FPLMission.findMany()];
                 case 2:
+                    fplMissions = _a.sent();
+                    console.log('FPLMissions:', fplMissions);
+                    return [3 /*break*/, 4];
+                case 3:
                     error_1 = _a.sent();
-                    console.error('Error connecting to the database:', error_1);
-                    return [3 /*break*/, 5];
-                case 3: return [4 /*yield*/, prisma.$disconnect()];
+                    console.error('Error querying FPLMission:', error_1);
+                    return [3 /*break*/, 4];
                 case 4:
-                    _a.sent();
-                    return [7 /*endfinally*/];
-                case 5: return [2 /*return*/];
+                    _a.trys.push([4, 6, , 7]);
+                    return [4 /*yield*/, prisma.RiskMatrix.findMany()];
+                case 5:
+                    riskMatrices = _a.sent();
+                    console.log('RiskMatrices:', riskMatrices);
+                    return [3 /*break*/, 7];
+                case 6:
+                    error_2 = _a.sent();
+                    console.error('Error querying RiskMatrix:', error_2);
+                    return [3 /*break*/, 7];
+                case 7: return [2 /*return*/];
             }
         });
     });
 }
-main();
+main()
+    .catch(function (e) {
+    console.error('Unhandled error:', e);
+    process.exit(1);
+})
+    .finally(function () { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, prisma.$disconnect()];
+            case 1:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });

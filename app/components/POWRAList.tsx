@@ -53,14 +53,25 @@ export default function POWRAList({ onEdit }: POWRAListProps) {
           },
         });
 
+        console.log('Response status:', response.status);
+        const responseText = await response.text();
+        console.log('Response body:', responseText);
+
         if (!response.ok) {
-          const errorData = await response.json();
           if (response.status === 401) {
             throw new Error('Unauthorized. Please log in and try again.');
           }
-          throw new Error(errorData.error || 'Failed to fetch POWRAs');
+          throw new Error(`Failed to fetch POWRAs: ${response.statusText}`);
         }
-        const data = await response.json();
+
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('Error parsing JSON:', parseError);
+          throw new Error('Invalid JSON response from server');
+        }
+
         setPowras(data.data || []);
       } catch (error) {
         console.error('Error fetching POWRAs:', error);

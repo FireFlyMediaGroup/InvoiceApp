@@ -1,9 +1,8 @@
-import fetch from 'node-fetch';
-import type { RequestInit as FetchRequestInit, Response as FetchResponse } from 'node-fetch';
+import fetch, { RequestInit as FetchRequestInit, Response as FetchResponse } from 'node-fetch';
 
 console.log(`Script started: ${new Date().toISOString()}`);
 
-const BASE_URL = 'http://localhost:3000/api/powra';
+const BASE_URL = 'http://localhost:3000/api';
 
 interface POWRA {
   id: string;
@@ -77,13 +76,28 @@ async function retryFetch(url: string, options: FetchRequestInit, retries = 3): 
   }
 }
 
-function createMockTestUser(): string {
-  return 'mock-test-user-id';
+function createMockTestUser(): { id: string; role: string } {
+  return { id: 'mock-test-user-id', role: 'USER' };
+}
+
+async function logResponse(response: FetchResponse, operation: string) {
+  console.log(`${operation} status:`, response.status);
+  console.log(`${operation} headers:`, response.headers.raw());
+  const responseText = await response.text();
+  console.log(`${operation} response body:`, responseText);
+  try {
+    const responseData = JSON.parse(responseText);
+    console.log(`${operation} parsed response:`, responseData);
+    return responseData;
+  } catch (error) {
+    console.error(`Error parsing ${operation} response:`, error);
+    return null;
+  }
 }
 
 const testPOWRAAPI = async () => {
   try {
-    console.log('Starting POWRA API test...');
+    console.log('Starting API test...');
 
     // Check network connectivity
     try {
@@ -94,19 +108,27 @@ const testPOWRAAPI = async () => {
       return;
     }
 
+    // Test the simple API route
+    console.log('\nTesting simple API route');
+    const testResponse = await fetch(`${BASE_URL}/test`);
+    await logResponse(testResponse, 'Test API');
+
     // Create a mock test user
-    const testUserId = createMockTestUser();
-    console.log('Mock test user created with ID:', testUserId);
+    const testUser = createMockTestUser();
+    console.log('Mock test user created:', testUser);
+
+    const headers = {
+      'X-User-Info': JSON.stringify({ user: testUser }),
+      'Content-Type': 'application/json',
+    };
 
     // Test GET all POWRAs
-    console.log('Testing GET all POWRAs');
-    const getAllResponse = await retryFetch(BASE_URL, {
+    console.log('\nTesting GET all POWRAs');
+    const getAllResponse = await retryFetch(`${BASE_URL}/powra`, {
       method: 'GET',
-      headers: { 'X-Test-Auth': JSON.stringify({ user: { id: testUserId } }) },
+      headers,
     });
-    console.log('GET all status:', getAllResponse.status);
-    const getAllData = await getAllResponse.json();
-    console.log('GET all response:', getAllData);
+    await logResponse(getAllResponse, 'GET all');
 
     // Test POST (Create) POWRA
     console.log('\nTesting POST POWRA');
@@ -130,17 +152,13 @@ const testPOWRAAPI = async () => {
       lessonsLearned: false,
     };
     console.log('Sending POST request with data:', JSON.stringify(newPOWRA));
-    const createResponse = await retryFetch(BASE_URL, {
+    const createResponse = await retryFetch(`${BASE_URL}/powra`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Test-Auth': JSON.stringify({ user: { id: testUserId } }),
-      },
+      headers,
       body: JSON.stringify(newPOWRA),
     });
-    console.log('POST status:', createResponse.status);
-    const createdPOWRAData = await createResponse.json();
-    console.log('POST response:', createdPOWRAData);
+    const createdPOWRAData = await logResponse(createResponse, 'POST');
+    
     if (!isPOWRA(createdPOWRAData)) {
       throw new Error('Invalid POWRA data received from server');
     }
@@ -149,13 +167,11 @@ const testPOWRAAPI = async () => {
 
     // Test GET single POWRA
     console.log('\nTesting GET single POWRA');
-    const getOneResponse = await retryFetch(`${BASE_URL}?id=${createdPOWRA.id}`, {
+    const getOneResponse = await retryFetch(`${BASE_URL}/powra?id=${createdPOWRA.id}`, {
       method: 'GET',
-      headers: { 'X-Test-Auth': JSON.stringify({ user: { id: testUserId } }) },
+      headers,
     });
-    console.log('GET one status:', getOneResponse.status);
-    const getOneData = await getOneResponse.json();
-    console.log('GET one response:', getOneData);
+    await logResponse(getOneResponse, 'GET one');
 
     // Test PUT (Update) POWRA
     console.log('\nTesting PUT POWRA');
@@ -171,27 +187,20 @@ const testPOWRAAPI = async () => {
       },
     };
     console.log('Sending PUT request with data:', JSON.stringify(updatedPOWRA));
-    const updateResponse = await retryFetch(`${BASE_URL}?id=${createdPOWRA.id}`, {
+    const updateResponse = await retryFetch(`${BASE_URL}/powra?id=${createdPOWRA.id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Test-Auth': JSON.stringify({ user: { id: testUserId } }),
-      },
+      headers,
       body: JSON.stringify(updatedPOWRA),
     });
-    console.log('PUT status:', updateResponse.status);
-    const updatedData = await updateResponse.json();
-    console.log('Updated POWRA:', updatedData);
+    await logResponse(updateResponse, 'PUT');
 
     // Test DELETE POWRA
     console.log('\nTesting DELETE POWRA');
-    const deleteResponse = await retryFetch(`${BASE_URL}?id=${createdPOWRA.id}`, {
+    const deleteResponse = await retryFetch(`${BASE_URL}/powra?id=${createdPOWRA.id}`, {
       method: 'DELETE',
-      headers: { 'X-Test-Auth': JSON.stringify({ user: { id: testUserId } }) },
+      headers,
     });
-    console.log('DELETE status:', deleteResponse.status);
-    const deleteData = await deleteResponse.json();
-    console.log('DELETE response:', deleteData);
+    await logResponse(deleteResponse, 'DELETE');
 
     console.log('POWRA API test completed successfully.');
   } catch (error) {

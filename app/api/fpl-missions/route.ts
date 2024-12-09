@@ -1,91 +1,93 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { z } from 'zod';
-import prisma from 'app/utils/db';
-import { auth } from 'app/utils/auth';
-import { PrismaClient, Role, User } from '@prisma/client';
-import { rbacMiddleware } from 'app/middleware/rbac';
-import { logError } from 'app/utils/monitoring';
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/app/utils/db';
+import { getToken } from 'next-auth/jwt';
 
-const createFPLMissionSchema = z.object({
-  siteId: z.string(),
-});
-
-interface FPLMission {
-  id: string;
-  status: 'DRAFT' | 'PENDING' | 'APPROVED';
-  siteId: string;
-  userId: string;
-  createdAt: Date;
-  updatedAt: Date;
+async function getUserFromToken(req: NextRequest) {
+  const token = await getToken({ req });
+  if (!token || !token.sub) {
+    return null;
+  }
+  return { id: token.sub };
 }
 
-type PrismaClientWithFPLMission = PrismaClient & {
-  fPLMission: {
-    findMany: () => Promise<FPLMission[]>;
-    create: (params: { data: Partial<FPLMission> }) => Promise<FPLMission>;
-  };
-};
+export async function GET(req: NextRequest) {
+  const user = await getUserFromToken(req);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-interface UserWithRole extends Omit<User, 'role'> {
-  role: Role;
-  id: string;
+  try {
+    const missions = await prisma.fPLMission.findMany({
+      where: {
+        userId: user.id,
+      },
+    });
+    return NextResponse.json(missions);
+  } catch (error) {
+    console.error('Error fetching FPL missions:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }
 
-export const GET = (request: NextRequest) =>
-  rbacMiddleware(
-    request,
-    async (): Promise<NextResponse> => {
-      const session = await auth();
-      if (!session || !session.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+export async function POST(req: NextRequest) {
+  const user = await getUserFromToken(req);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-      const user = session.user as UserWithRole;
+  try {
+    const data = await req.json();
+    const newMission = await prisma.fPLMission.create({
+      data: {
+        ...data,
+        userId: user.id,
+      },
+    });
+    return NextResponse.json(newMission, { status: 201 });
+  } catch (error) {
+    console.error('Error creating FPL mission:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
 
-      try {
-        const fplMissions = await (prisma as PrismaClientWithFPLMission).fPLMission.findMany();
-        const filteredMissions =
-          user.role === 'USER' ? fplMissions.filter(m => m.userId === user.id) : fplMissions;
+export async function PUT(req: NextRequest) {
+  const user = await getUserFromToken(req);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-        return NextResponse.json(filteredMissions);
-      } catch (error) {
-        logError('Error fetching FPL missions', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-      }
-    },
-    ['USER', 'SUPERVISOR', 'ADMIN']
-  );
+  try {
+    const data = await req.json();
+    const { id, ...updateData } = data;
 
-export const POST = (request: NextRequest) =>
-  rbacMiddleware(
-    request,
-    async (): Promise<NextResponse> => {
-      const session = await auth();
-      if (!session || !session.user || typeof session.user.id !== 'string') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    const updatedMission = await prisma.fPLMission.update({
+      where: { id, userId: user.id },
+      data: updateData,
+    });
 
-      try {
-        const body = await request.json();
-        const { siteId } = createFPLMissionSchema.parse(body);
+    return NextResponse.json(updatedMission);
+  } catch (error) {
+    console.error('Error updating FPL mission:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
 
-        const newMission = await (prisma as PrismaClientWithFPLMission).fPLMission.create({
-          data: {
-            siteId,
-            userId: session.user.id,
-            status: 'DRAFT',
-          },
-        });
+export async function DELETE(req: NextRequest) {
+  const user = await getUserFromToken(req);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-        return NextResponse.json(newMission);
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          return NextResponse.json({ error: error.errors }, { status: 400 });
-        }
-        logError('Error creating FPL mission', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-      }
-    },
-    ['USER', 'SUPERVISOR', 'ADMIN']
-  );
+  try {
+    const { id } = await req.json();
+
+    await prisma.fPLMission.delete({
+      where: { id, userId: user.id },
+    });
+
+    return NextResponse.json({ message: 'Mission deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting FPL mission:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}

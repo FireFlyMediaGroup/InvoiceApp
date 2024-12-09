@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [FPL Mission Planning Feature Implementation]
+
+### Added
+
+- FPL Mission Planning feature components:
+  - FPLMissionsList (app/components/FPLMissions/List/FPLMissionsList.tsx)
+  - StatusBadge (app/components/FPLMissions/Status/StatusBadge.tsx)
+  - RiskMatrixForm (app/components/FPLMissions/Forms/RiskMatrixForm.tsx)
+  - MissionPlanningScriptForm (app/components/FPLMissions/Forms/MissionPlanningScriptForm.tsx)
+  - TailboardDocumentForm (app/components/FPLMissions/Forms/TailboardDocumentForm.tsx)
+- Basic test setup for FPL Mission Planning components
+- Updated implementation guide for FPL Mission Planning feature (docs/fpl-missions/implementation-guide.md)
+- Jest configuration files (jest.config.js and jest.setup.js)
+- API routes for FPL Missions (app/api/fpl-missions/route.ts):
+  - GET: Fetch all missions for the authenticated user
+  - POST: Create a new mission
+  - PUT: Update an existing mission
+  - DELETE: Delete a mission
+
+### Changed
+
+- Updated package.json with new dependencies and test script
+
 ## [Unreleased]
 
 ### Added
@@ -73,3 +96,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Regenerated Prisma Client to recognize POWRA model correctly
 - Added comprehensive test suite for RBAC and user management features
 - Updated development documentation to reflect new RBAC and user management processes
+
+## [0.1.0] - 2023-01-01
+
+### Added
+- Initial project setup
+- Basic Invoice management functionality

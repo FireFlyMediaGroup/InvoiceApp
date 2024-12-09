@@ -1,17 +1,21 @@
-export type Currency = 'USD' | 'EUR' | 'GBP';
+import { User } from "@prisma/client";
+import "next-auth";
 
-export interface CurrencyAmount {
-  amount: number;
-  currency: Currency;
+declare module "next-auth" {
+  interface Session {
+    user: User & {
+      role: "USER" | "SUPERVISOR" | "ADMIN";
+    };
+  }
 }
 
-export interface FormState {
-  status: 'idle' | 'error' | 'success';
-  message?: string;
-}
+export type FPLMissionStatus = "DRAFT" | "PENDING" | "APPROVED";
 
-export interface InvoiceFormData {
-  total: number;
-  currency: Currency;
-  invoiceItemRate: number;
+export interface FPLMission {
+  id: string;
+  status: FPLMissionStatus;
+  siteId: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

@@ -14,6 +14,12 @@ enum Role {
   ADMIN
 }
 
+enum DocumentStatus {
+  DRAFT
+  PENDING
+  APPROVED
+}
+
 model User {
   id            String          @id @default(cuid())
   firstName     String?
@@ -30,6 +36,7 @@ model User {
   Authenticator Authenticator[]
   invoices      Invoice[]
   powras        POWRA[]
+  fplMissions   FPLMission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -163,4 +170,48 @@ enum Risk {
   L
   M
   H
+}
+
+model FPLMission {
+  id                    String   @id @default(uuid())
+  status                DocumentStatus @default(DRAFT)
+  siteId                String
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id])
+  riskMatrix            RiskMatrix?
+  missionPlanningScript MissionPlanningScript?
+  tailboards            TailboardDocument[]
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model RiskMatrix {
+  id           String   @id @default(uuid())
+  status       DocumentStatus @default(DRAFT)
+  content      String
+  fplMissionId String   @unique
+  fplMission   FPLMission @relation(fields: [fplMissionId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model MissionPlanningScript {
+  id           String   @id @default(uuid())
+  status       DocumentStatus @default(DRAFT)
+  content      String
+  fplMissionId String   @unique
+  fplMission   FPLMission @relation(fields: [fplMissionId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model TailboardDocument {
+  id           String   @id @default(uuid())
+  status       DocumentStatus @default(DRAFT)
+  content      String
+  date         DateTime
+  fplMissionId String
+  fplMission   FPLMission @relation(fields: [fplMissionId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

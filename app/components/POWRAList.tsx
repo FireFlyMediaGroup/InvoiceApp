@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +8,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -16,10 +16,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import { MoreHorizontal } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getSession } from 'next-auth/react';
+import { useApi } from '../hooks/useApi';
 
 type POWRA = {
   id: string;
@@ -36,42 +36,14 @@ export default function POWRAList({ onEdit }: POWRAListProps) {
   const [powras, setPowras] = useState<POWRA[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { fetchWithAuth } = useApi();
 
   useEffect(() => {
     const fetchPOWRAs = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const session = await getSession();
-        if (!session) {
-          throw new Error('No active session. Please log in and try again.');
-        }
-
-        const response = await fetch('/api/powra', {
-          headers: {
-            'X-User-Info': JSON.stringify(session),
-          },
-        });
-
-        console.log('Response status:', response.status);
-        const responseText = await response.text();
-        console.log('Response body:', responseText);
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error('Unauthorized. Please log in and try again.');
-          }
-          throw new Error(`Failed to fetch POWRAs: ${response.statusText}`);
-        }
-
-        let data;
-        try {
-          data = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('Error parsing JSON:', parseError);
-          throw new Error('Invalid JSON response from server');
-        }
-
+        const data = await fetchWithAuth('/api/powra');
         setPowras(data.data || []);
       } catch (error) {
         console.error('Error fetching POWRAs:', error);
@@ -86,25 +58,13 @@ export default function POWRAList({ onEdit }: POWRAListProps) {
     };
 
     fetchPOWRAs();
-  }, []);
+  }, [fetchWithAuth]);
 
   const handleDelete = async (id: string) => {
     try {
-      const session = await getSession();
-      if (!session) {
-        throw new Error('No active session. Please log in and try again.');
-      }
-
-      const response = await fetch(`/api/powra?id=${id}`, {
+      await fetchWithAuth(`/api/powra?id=${id}`, {
         method: 'DELETE',
-        headers: {
-          'X-User-Info': JSON.stringify(session),
-        },
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete POWRA');
-      }
       setPowras(powras.filter((powra) => powra.id !== id));
     } catch (error) {
       console.error('Error deleting POWRA:', error);

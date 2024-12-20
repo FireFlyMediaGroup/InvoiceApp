@@ -16,17 +16,6 @@ const customLogger = (level: 'info' | 'warn' | 'error', message: string, error?:
   }
 };
 
-// Extend the User type
-export interface ExtendedUser extends User {
-  isAllowed?: boolean;
-  role?: 'USER' | 'SUPERVISOR' | 'ADMIN';
-}
-
-// Extend the Session type
-export interface ExtendedSession extends Session {
-  user?: ExtendedUser;
-}
-
 // Custom error class for email sending failures
 class EmailSendError extends Error {
   constructor(message: string) {
@@ -284,25 +273,24 @@ export const authConfig: NextAuthConfig = {
         return false;
       }
     },
-    async session({ session, user }): Promise<ExtendedSession> {
+    async session({ session, user }): Promise<Session> {
       customLogger('info', `Session callback called for user: ${user.id}`);
-      const extendedSession = session as ExtendedSession;
-      if (extendedSession.user) {
-        extendedSession.user.id = user.id;
+      if (session.user) {
+        session.user.id = user.id;
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: { isAllowed: true, role: true },
         });
         if (dbUser) {
-          extendedSession.user.isAllowed = dbUser.isAllowed;
-          extendedSession.user.role = dbUser.role;
+          session.user.isAllowed = dbUser.isAllowed;
+          session.user.role = dbUser.role;
         }
       }
-      return extendedSession;
+      return session;
     },
     async authorized({ request, auth }) {
       const { pathname } = request.nextUrl;
-      const user = auth?.user as ExtendedUser;
+      const user = auth?.user as User;
 
       // Define role-based access rules
       const roleAccessRules = {
@@ -356,6 +344,7 @@ export const authConfig: NextAuthConfig = {
     maxAge: 24 * 60 * 60, // 24 hours (1 day)
     updateAge: 60 * 60, // 1 hour
   },
+  secret: process.env.NEXTAUTH_SECRET, // Add this line to include the secret
 };
 
 customLogger('info', 'Auth configuration initialized, creating handlers');

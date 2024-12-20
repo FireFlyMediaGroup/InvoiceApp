@@ -1,94 +1,97 @@
-import React from 'react';
-import { useForm, ControllerRenderProps } from 'react-hook-form';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { toast } from 'react-hot-toast';
 
 const missionPlanningScriptSchema = z.object({
-  objective: z.string().min(1, 'Objective is required'),
-  equipmentNeeded: z.string().min(1, 'Equipment needed is required'),
-  safetyProcedures: z.string().min(1, 'Safety procedures are required'),
-  estimatedDuration: z.string().min(1, 'Estimated duration is required'),
+  content: z.string().min(1, 'Mission planning script content is required'),
+  site: z.string().min(1, 'Site is required'),
 });
 
-type MissionPlanningScriptFormValues = z.infer<typeof missionPlanningScriptSchema>;
+export type MissionPlanningScriptFormValues = z.infer<typeof missionPlanningScriptSchema>;
 
 interface MissionPlanningScriptFormProps {
-  onSubmit: (data: MissionPlanningScriptFormValues) => void;
+  fplMissionId: string;
+  onSuccess: () => void;
   initialData?: Partial<MissionPlanningScriptFormValues>;
 }
 
-export function MissionPlanningScriptForm({ onSubmit, initialData }: MissionPlanningScriptFormProps) {
-  const form = useForm<MissionPlanningScriptFormValues>({
+export function MissionPlanningScriptForm({ fplMissionId, onSuccess, initialData }: MissionPlanningScriptFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<MissionPlanningScriptFormValues>({
     resolver: zodResolver(missionPlanningScriptSchema),
     defaultValues: initialData || {
-      objective: '',
-      equipmentNeeded: '',
-      safetyProcedures: '',
-      estimatedDuration: '',
+      content: '',
+      site: '',
     },
   });
 
+  const onSubmit = async (data: MissionPlanningScriptFormValues) => {
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/mission-planning-scripts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...data,
+          fplMissionId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create mission planning script');
+      }
+
+      toast.success('Mission planning script created successfully');
+      onSuccess();
+    } catch (error) {
+      console.error('Error creating mission planning script:', error);
+      toast.error('Failed to create mission planning script. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="objective"
-          render={({ field }: { field: ControllerRenderProps<MissionPlanningScriptFormValues, 'objective'> }) => (
-            <FormItem>
-              <FormLabel>Mission Objective</FormLabel>
-              <FormControl>
-                <Textarea {...field} placeholder="Describe the mission objective" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <div>
+        <Label htmlFor="site">Site</Label>
+        <Input
+          id="site"
+          {...register('site')}
+          placeholder="Enter site name"
         />
-        <FormField
-          control={form.control}
-          name="equipmentNeeded"
-          render={({ field }: { field: ControllerRenderProps<MissionPlanningScriptFormValues, 'equipmentNeeded'> }) => (
-            <FormItem>
-              <FormLabel>Equipment Needed</FormLabel>
-              <FormControl>
-                <Textarea {...field} placeholder="List required equipment" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        {errors.site && (
+          <p className="text-red-500 text-sm mt-1">{errors.site.message}</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor="content">Mission Planning Script Content</Label>
+        <Textarea
+          id="content"
+          {...register('content')}
+          placeholder="Enter mission planning script content"
+          rows={10}
         />
-        <FormField
-          control={form.control}
-          name="safetyProcedures"
-          render={({ field }: { field: ControllerRenderProps<MissionPlanningScriptFormValues, 'safetyProcedures'> }) => (
-            <FormItem>
-              <FormLabel>Safety Procedures</FormLabel>
-              <FormControl>
-                <Textarea {...field} placeholder="Outline safety procedures" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="estimatedDuration"
-          render={({ field }: { field: ControllerRenderProps<MissionPlanningScriptFormValues, 'estimatedDuration'> }) => (
-            <FormItem>
-              <FormLabel>Estimated Duration</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="e.g., 2 days, 1 week" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit">Submit Mission Planning Script</Button>
-      </form>
-    </Form>
+        {errors.content && (
+          <p className="text-red-500 text-sm mt-1">{errors.content.message}</p>
+        )}
+      </div>
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? 'Submitting...' : 'Submit Mission Planning Script'}
+      </Button>
+    </form>
   );
 }

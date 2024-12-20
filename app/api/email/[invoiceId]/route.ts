@@ -1,14 +1,14 @@
-import prisma from '@/app/utils/db';
-import { requireUser } from '@/app/utils/hooks';
-import { emailClient } from '@/app/utils/mailtrap';
+import prisma from '../../../utils/db';
+import { requireUser } from '../../../utils/hooks';
+import { emailClient } from '../../../utils/mailtrap';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { rbacMiddleware } from '@/app/middleware/rbac';
+import { rbacMiddleware } from '../../../middleware/rbac';
 
 async function sendEmailReminder(
   request: NextRequest,
   invoiceId: string
-) {
+): Promise<NextResponse> {
   try {
     const session = await requireUser();
 
@@ -52,9 +52,13 @@ async function sendEmailReminder(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { invoiceId: string } }
-): Promise<NextResponse> {
-  return rbacMiddleware(request, () => sendEmailReminder(request, params.invoiceId), ['USER', 'SUPERVISOR', 'ADMIN']);
-}
+export const POST = rbacMiddleware(
+  async (request: NextRequest, context: { params: Record<string, string> }) => {
+    const invoiceId = context.params.invoiceId;
+    if (!invoiceId) {
+      return NextResponse.json({ error: 'Invalid invoice ID' }, { status: 400 });
+    }
+    return sendEmailReminder(request, invoiceId);
+  },
+  ['USER', 'SUPERVISOR', 'ADMIN']
+);

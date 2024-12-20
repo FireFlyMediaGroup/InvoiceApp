@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Implemented FPL Mission Planning feature
+  - Created pages for displaying and managing FPL missions
+  - Added FPLMissionsList component for listing missions
+  - Implemented individual mission view page
+  - Added pages for risk matrix, mission planning script, and tailboard document
+- Integrated FPL Mission components with API and state management
+- Implemented RBAC (Role-Based Access Control) for the FPL mission feature
+- Added comprehensive error handling and validation to FPL Mission API routes
+- Created new API routes for FPL Missions (GET, POST, PUT, DELETE)
+- Implemented more comprehensive tests for FPL Mission components and API routes
+
+### Changed
+- Updated types to include FPL Mission related interfaces and enums
+- Modified existing components to incorporate RBAC checks
+- Enhanced API routes with improved error handling and data validation using Zod
+
+### Fixed
+- Resolved issues with type definitions in FPL Mission related components and tests
+
 ## [FPL Mission Planning Feature Implementation]
 
 ### Added

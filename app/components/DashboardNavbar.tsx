@@ -1,14 +1,17 @@
 import { Button } from '@/components/ui/button';
-import Logo from '@/public/SkySpecs_Logo_Stacked_vertical.png';
+import Logo from '../../public/SkySpecs_Logo_Stacked_vertical.png';
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
-import { auth } from '@/app/utils/auth';
-import type { ExtendedUser } from '@/app/utils/auth';
+import { auth } from '../utils/auth';
+
+interface User {
+  role?: string;
+}
 
 export async function DashboardNavbar() {
   const session = await auth();
-  const user = session?.user as ExtendedUser | undefined;
+  const user = session?.user as User | undefined;
   const userRole = user?.role;
 
   const isAdmin = userRole === 'ADMIN';
@@ -33,6 +36,9 @@ export async function DashboardNavbar() {
         )}
         <Link href="/dashboard/powra">
           <Button variant="ghost">POWRA</Button>
+        </Link>
+        <Link href="/dashboard/fpl-missions/tailboard/list">
+          <Button variant="ghost">Tailboard Documents</Button>
         </Link>
         {isAdmin && (
           <Link href="/admin">

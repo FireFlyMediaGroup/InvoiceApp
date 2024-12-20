@@ -2,7 +2,8 @@ import { PrismaClient, Prisma, POWRAStatus } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { rbacMiddleware } from "app/middleware/rbac";
+import { rbacMiddleware } from '../../middleware/rbac';
+import { getToken } from 'next-auth/jwt';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -12,22 +13,11 @@ declare global {
 const prismaClient = global.prisma ?? new PrismaClient();
 if (process.env.NODE_ENV !== 'production') global.prisma = prismaClient;
 
-function getSession(request: NextRequest) {
-  console.log('[getSession] Request headers:', request.headers);
-  const userInfo = request.headers.get('X-User-Info');
-  console.log('[getSession] X-User-Info header:', userInfo);
-  if (!userInfo) {
-    console.error('[getSession] No X-User-Info header found');
-    return null;
-  }
-  try {
-    const session = JSON.parse(userInfo);
-    console.log('[getSession] Parsed session:', session);
-    return session;
-  } catch (error) {
-    console.error('[getSession] Error parsing X-User-Info header:', error);
-    return null;
-  }
+async function getSession(request: NextRequest) {
+  console.log('[getSession] Getting session');
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  console.log('[getSession] Token:', token);
+  return token;
 }
 
 const riskSchema = z.enum(['L', 'M', 'H']);
@@ -74,10 +64,10 @@ async function handleGET(request: NextRequest) {
   try {
     console.log('[handleGET] Started');
     logDebug('Handling GET request', { url: request.url });
-    const session = getSession(request);
+    const session = await getSession(request);
     logDebug('Session', session);
 
-    if (!session || !session.user) {
+    if (!session || !session.sub) {
       logDebug('Unauthorized: No valid session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -105,15 +95,15 @@ async function handleGET(request: NextRequest) {
       return NextResponse.json(powra);
     }
 
-    logDebug('Fetching multiple POWRAs', { userId: session.user.id, page, pageSize });
+    logDebug('Fetching multiple POWRAs', { userId: session.sub, page, pageSize });
     const powras = await prismaClient.pOWRA.findMany({
-      where: { userId: session.user.id },
+      where: { userId: session.sub },
       include: { controlMeasures: true },
       skip: (page - 1) * pageSize,
       take: pageSize,
     });
 
-    const total = await prismaClient.pOWRA.count({ where: { userId: session.user.id } });
+    const total = await prismaClient.pOWRA.count({ where: { userId: session.sub } });
 
     logDebug('POWRAs fetched', { count: powras.length, total });
     return NextResponse.json({ data: powras, total, page, pageSize });
@@ -126,9 +116,9 @@ async function handleGET(request: NextRequest) {
 async function handlePOST(request: NextRequest) {
   try {
     console.log('[handlePOST] Started');
-    const session = getSession(request);
+    const session = await getSession(request);
 
-    if (!session || !session.user) {
+    if (!session || !session.sub) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -141,7 +131,7 @@ async function handlePOST(request: NextRequest) {
     const newPOWRA = await prismaClient.pOWRA.create({
       data: {
         ...validatedData,
-        user: { connect: { id: session.user.id } },
+        user: { connect: { id: session.sub } },
       },
       include: { controlMeasures: true },
     });
@@ -165,9 +155,9 @@ async function handlePOST(request: NextRequest) {
 async function handlePUT(request: NextRequest) {
   try {
     console.log('[handlePUT] Started');
-    const session = getSession(request);
+    const session = await getSession(request);
 
-    if (!session || !session.user) {
+    if (!session || !session.sub) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -185,7 +175,7 @@ async function handlePUT(request: NextRequest) {
       where: { id },
       data: {
         ...validatedData,
-        user: { connect: { id: session.user.id } },
+        user: { connect: { id: session.sub } },
       },
       include: { controlMeasures: true },
     });
@@ -206,9 +196,9 @@ async function handlePUT(request: NextRequest) {
 async function handleDELETE(request: NextRequest) {
   try {
     console.log('[handleDELETE] Started');
-    const session = getSession(request);
+    const session = await getSession(request);
 
-    if (!session || !session.user) {
+    if (!session || !session.sub) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

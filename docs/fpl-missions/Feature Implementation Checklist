@@ -1,0 +1,170 @@
+FPL Mission Planning Feature Implementation Guide
+Overview
+The FPL Mission Planning feature is an extension to the dashboard that allows multiple technicians (users) to manage their missions at various sites. Each mission involves:
+
+Risk Calculation Matrix (completed once, before work starts)
+Mission Planning Script (completed once, before work starts)
+Tailboard Documents (completed daily per tech on the site, after the mission is approved and work has started)
+Workflow and Status Transitions
+Before project start:
+User (tech) creates an FPL Mission for their site. Initially DRAFT.
+User completes Risk Calculation Matrix and Mission Planning Script, both start as DRAFT.
+Once both are completed, user submits them, changing each to PENDING.
+User can then submit the FPL Mission (if both risk & script are PENDING), changing the mission to PENDING.
+Supervisor/Admin reviews the mission and approves it. The mission (and its risk/script) moves to APPROVED.
+After project start (mission approved):
+Each tech at the site must submit a Tailboard Document daily.
+Tailboard doc starts DRAFT, user completes & submits -> PENDING.
+Supervisor/Admin approves daily tailboard -> APPROVED.
+RBAC Rules
+USER: Can fully CRUD their own mission and documents while in DRAFT. They can submit (DRAFT->PENDING) but cannot approve or revert after approval. They cannot edit APPROVED docs or missions.
+SUPERVISOR/ADMIN: Can view and manage all users' missions and documents. Can approve PENDING items (PENDING->APPROVED). Can modify APPROVED if needed.
+Implementation Checklist
+Completed:
+Database Schema (prisma/schema.prisma):
+
+FPLMission model
+RiskMatrix model
+MissionPlanningScript model
+TailboardDocument model
+API Routes (app/api/fpl-missions/route.ts):
+
+GET: Fetch FPL missions
+POST: Create new FPL mission
+PUT: Update FPL mission
+DELETE: Delete FPL mission
+RBAC middleware applied
+Frontend Components:
+
+FPLMissionsList (app/components/FPLMissions/List/FPLMissionsList.tsx)
+StatusBadge (app/components/FPLMissions/Status/StatusBadge.tsx)
+Stub pages for Risk Matrix, Mission Planning Script, and Tailboard Document
+Actions (app/actions/fplMissions.ts):
+
+getFPLMissions
+createFPLMission
+updateFPLMission
+deleteFPLMission
+Types (app/utils/types.ts):
+
+FPLMissionStatus
+FPLMission interface
+Routing:
+
+FPL Missions page (app/dashboard/fpl-missions/page.tsx)
+Individual FPL Mission page (app/dashboard/fpl-missions/[id]/page.tsx)
+Stub pages for Risk Matrix, Mission Planning Script, and Tailboard Document
+Dashboard Integration:
+
+Added FPL Missions link to DashboardLinks component
+To Be Implemented:
+API Routes:
+
+Implement specific routes for risk matrix, mission planning script, and tailboard document
+Add approval functionality for PENDING missions
+Frontend Components:
+
+Implement MissionPlanningScriptForm
+Implement RiskMatrixForm
+Implement TailboardDocumentForm
+Add edit functionality to FPLMissionsList
+Implement approval button functionality in FPLMissionsList
+RBAC:
+
+Ensure proper role checks are implemented in all components and routes
+Implement role-based visibility for certain actions (e.g., approval)
+Error Handling:
+
+Implement more robust error handling in API routes
+Add error boundaries to React components
+Testing:
+
+Write unit tests for API routes
+Write unit tests for React components
+Implement integration tests for the entire FPL Mission workflow
+Documentation:
+
+Create user guide for FPL Mission Planning feature
+Update API documentation to include new FPL Mission endpoints
+Performance Optimization:
+
+Implement pagination or infinite scrolling for FPLMissionsList
+Security:
+
+Ensure all user inputs are properly sanitized
+Implement rate limiting on API routes
+Add CSRF protection
+Key Components
+Database Models (Prisma):
+
+FPLMission (links to a user and a site, and holds status)
+RiskMatrix (one per mission)
+MissionPlanningScript (one per mission)
+TailboardDocument (multiple per mission, per day, per user)
+API Routes:
+
+app/api/fpl-missions/ for main mission CRUD and status updates.
+app/api/fpl-missions/risk-matrix/ for RiskMatrix operations.
+app/api/fpl-missions/mission-planning-script/ for MissionPlanningScript operations.
+app/api/fpl-missions/tailboard-document/ for TailboardDocument daily submissions.
+Frontend Components:
+
+Dashboard Listing (like POWRA) at app/dashboard/fpl-missions/:
+Shows all missions and their documents for a user (just theirs) or supervisor/admin (all).
+Displays status, allows submissions, shows who can approve.
+Form Pages for Risk Matrix, Mission Script, Tailboard:
+Minimal stub pages for now, with fields and a "Submit" (DRAFT->PENDING) button.
+RBAC Middleware:
+
+Reuse existing rbacMiddleware from app/middleware/rbac.ts.
+Ensure allowed roles match required actions (e.g., only admin/supervisor can approve PENDING items).
+Next Steps:
+Implement the specific API routes for risk matrix, mission planning script, and tailboard document.
+Add approval functionality for PENDING missions in both backend and frontend.
+Implement the form components (MissionPlanningScriptForm, RiskMatrixForm, TailboardDocumentForm) as stub pages with basic RBAC.
+Enhance error handling in API routes and add error boundaries to React components.
+Start writing unit tests for existing components and API routes.
+Implement proper RBAC checks in all components and routes.
+Begin documentation process for user guide and API endpoints.
+Testing Strategy
+Unit Tests:
+
+Test Prisma queries, role checks in isolation.
+Test form validation with Zod.
+Integration Tests:
+
+API endpoints: Ensure users can only submit their own docs, can't approve, etc.
+Test mission submission logic, tailboard daily submissions, and approvals.
+E2E Tests:
+
+Simulate user completing risk/script, submitting mission.
+Supervisor approving mission.
+User creating daily tailboard doc, submitting, supervisor approving.
+Run tests via npm test and ensure coverage.
+
+Documentation & Maintenance
+Update docs/fpl-missions-user-guide.md:
+
+Outline the workflow:
+Before project: complete risk/script, submit mission, admin approves.
+After approval: daily tailboards, submit daily, admin approves.
+Show screenshots or step-by-step instructions if available.
+Update CHANGELOG.md to note new feature.
+
+Maintenance:
+
+Keep each route and component modular.
+Use clear naming conventions (FPLMissionsList, FPLMissionForm, etc.).
+Separate logic into hooks where possible (useFPLMissions hook for data fetching).
+Logging & Monitoring:
+
+Add logs in app/utils/monitoring.ts for mission submissions and approvals.
+Monitor performance and adjust queries as needed.
+Conclusion
+This implementation guide outlines a modular approach:
+
+A clear DB schema with status fields.
+Distinct API routes for each document type.
+A dashboard UI that reflects POWRA's style but adds mission logic.
+A well-defined user workflow and RBAC enforcement.
+By following the steps and best practices above, developers can confidently implement and maintain the FPL Mission Planning feature. The checklist provides a clear roadmap of what has been completed and what still needs to be done, ensuring a systematic approach to the implementation.

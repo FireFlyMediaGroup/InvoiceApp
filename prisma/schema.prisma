@@ -8,38 +8,32 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum Role {
-  USER
-  SUPERVISOR
-  ADMIN
-}
-
-enum DocumentStatus {
-  DRAFT
-  PENDING
-  APPROVED
-}
-
 model User {
-  id            String          @id @default(cuid())
-  firstName     String?
-  lastName      String?
-  address       String?
-  email         String          @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  isAllowed     Boolean         @default(false)
-  role          Role            @default(USER)
-  accounts      Account[]
-  sessions      Session[]
-  Authenticator Authenticator[]
-  invoices      Invoice[]
-  powras        POWRA[]
-  fplMissions   FPLMission[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                         String                  @id @default(cuid())
+  firstName                  String?
+  lastName                   String?
+  address                    String?
+  email                      String                  @unique
+  emailVerified              DateTime?
+  image                      String?
+  isAllowed                  Boolean                 @default(false)
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+  role                       Role                    @default(USER)
+  password                   String?
+  accounts                   Account[]
+  Authenticator              Authenticator[]
+  fplMissions                FPLMission[]
+  invoices                   Invoice[]
+  approvedMissionScripts     MissionPlanningScript[] @relation("ApprovedMissionScripts")
+  createdMissionScripts      MissionPlanningScript[] @relation("CreatedMissionScripts")
+  powras                     POWRA[]
+  approvedRiskMatrices       RiskMatrix[]            @relation("ApprovedRiskMatrices")
+  createdRiskMatrices        RiskMatrix[]            @relation("CreatedRiskMatrices")
+  sessions                   Session[]
+  approvedTailboardDocuments TailboardDocument[]     @relation("ApprovedTailboardDocuments")
+  createdTailboardDocuments  TailboardDocument[]     @relation("CreatedTailboardDocuments")
+  rejectedTailboardDocuments TailboardDocument[]     @relation("RejectedTailboardDocuments")
 }
 
 model Account {
@@ -54,11 +48,9 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([provider, providerAccountId])
 }
@@ -67,10 +59,9 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model VerificationToken {
@@ -90,38 +81,165 @@ model Authenticator {
   credentialDeviceType String
   credentialBackedUp   Boolean
   transports           String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, credentialID])
 }
 
 model Invoice {
-  id String @id @default(uuid())
-
-  invoiceName   String
-  total         Int
-  status        InvoiceStatus
-  date          DateTime
-  dueDate       Int
-  fromName      String
-  fromEmail     String
-  fromAddress   String
-  clientName    String
-  clientEmail   String
-  clientAddress String
-  currency      String
-  invoiceNumber Int
-  note          String?
-
+  id                     String        @id @default(uuid())
+  invoiceName            String
+  total                  Int
+  status                 InvoiceStatus
+  date                   DateTime
+  dueDate                Int
+  fromName               String
+  fromEmail              String
+  fromAddress            String
+  clientName             String
+  clientEmail            String
+  clientAddress          String
+  currency               String
+  invoiceNumber          Int
+  note                   String?
   invoiceItemDescription String
   invoiceItemQuantity    Int
   invoiceItemRate        Int
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  userId                 String?
+  User                   User?         @relation(fields: [userId], references: [id])
+}
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  User      User?    @relation(fields: [userId], references: [id])
-  userId    String?
+model POWRA {
+  id                   String           @id @default(uuid())
+  status               POWRAStatus      @default(DRAFT)
+  reviewComments       String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  userId               String
+  chiefPilot           String
+  date                 DateTime
+  hse                  String
+  lessonsLearned       Boolean
+  location             String
+  pilotName            String
+  reviewDates          DateTime[]
+  reviewNames          String[]
+  site                 String
+  time                 String
+  beforeStartChecklist String[]
+  controlMeasures      ControlMeasure[]
+  user                 User             @relation(fields: [userId], references: [id])
+}
+
+model ControlMeasure {
+  id       String @id @default(uuid())
+  hazardNo String
+  measures String
+  risk     Risk
+  powraId  String
+  powra    POWRA  @relation(fields: [powraId], references: [id], onDelete: Cascade)
+}
+
+model FPLMission {
+  id                     String                  @id @default(uuid())
+  status                 DocumentStatus          @default(DRAFT)
+  siteId                 String
+  userId                 String
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  siteName               String                  @default("Demo")
+  document               Document?
+  user                   User                    @relation(fields: [userId], references: [id])
+  missionPlanningScripts MissionPlanningScript[]
+  rpic                   RPIC?
+  riskMatrices           RiskMatrix[]
+  tailboards             TailboardDocument[]
+}
+
+model Document {
+  id           String         @id @default(uuid())
+  status       DocumentStatus @default(DRAFT)
+  content      String
+  fplMissionId String         @unique
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  site         String
+  fplMission   FPLMission     @relation(fields: [fplMissionId], references: [id])
+}
+
+model RPIC {
+  id           String         @id @default(uuid())
+  status       DocumentStatus @default(DRAFT)
+  content      String
+  fplMissionId String         @unique
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  fplMission   FPLMission     @relation(fields: [fplMissionId], references: [id])
+}
+
+model TailboardDocument {
+  id           String         @id @default(uuid())
+  status       DocumentStatus @default(DRAFT)
+  date         DateTime
+  fplMissionId String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  approvedAt   DateTime?
+  approvedById String?
+  createdById  String
+  rejectedAt   DateTime?
+  rejectedById String?
+  content      Json
+  approvedBy   User?          @relation("ApprovedTailboardDocuments", fields: [approvedById], references: [id])
+  createdBy    User           @relation("CreatedTailboardDocuments", fields: [createdById], references: [id])
+  fplMission   FPLMission     @relation(fields: [fplMissionId], references: [id])
+  rejectedBy   User?          @relation("RejectedTailboardDocuments", fields: [rejectedById], references: [id])
+}
+
+model RiskMatrix {
+  id           String         @id @default(uuid())
+  content      String
+  site         String
+  fplMissionId String
+  userId       String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  approvedAt   DateTime?
+  approvedById String?
+  status       DocumentStatus @default(DRAFT)
+  approvedBy   User?          @relation("ApprovedRiskMatrices", fields: [approvedById], references: [id])
+  fplMission   FPLMission     @relation(fields: [fplMissionId], references: [id])
+  user         User           @relation("CreatedRiskMatrices", fields: [userId], references: [id])
+}
+
+model MissionPlanningScript {
+  id           String         @id @default(uuid())
+  content      String
+  site         String
+  fplMissionId String
+  userId       String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  approvedAt   DateTime?
+  approvedById String?
+  status       DocumentStatus @default(DRAFT)
+  approvedBy   User?          @relation("ApprovedMissionScripts", fields: [approvedById], references: [id])
+  fplMission   FPLMission     @relation(fields: [fplMissionId], references: [id])
+  user         User           @relation("CreatedMissionScripts", fields: [userId], references: [id])
+}
+
+enum Role {
+  USER
+  SUPERVISOR
+  ADMIN
+}
+
+enum DocumentStatus {
+  DRAFT
+  PENDING
+  APPROVED
 }
 
 enum InvoiceStatus {
@@ -135,83 +253,8 @@ enum POWRAStatus {
   APPROVED
 }
 
-model POWRA {
-  id                   String           @id @default(uuid())
-  status               POWRAStatus      @default(DRAFT)
-  site                 String
-  date                 DateTime
-  time                 String
-  pilotName            String
-  location             String
-  chiefPilot           String
-  hse                  String
-  beforeStartChecklist String[]
-  reviewNames          String[]
-  reviewDates          DateTime[]
-  lessonsLearned       Boolean
-  reviewComments       String?
-  userId               String
-  user                 User             @relation(fields: [userId], references: [id])
-  controlMeasures      ControlMeasure[]
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
-}
-
-model ControlMeasure {
-  id        String @id @default(uuid())
-  hazardNo  String
-  measures  String
-  risk      Risk
-  powraId   String
-  powra     POWRA  @relation(fields: [powraId], references: [id], onDelete: Cascade)
-}
-
 enum Risk {
   L
   M
   H
-}
-
-model FPLMission {
-  id                    String   @id @default(uuid())
-  status                DocumentStatus @default(DRAFT)
-  siteId                String
-  userId                String
-  user                  User     @relation(fields: [userId], references: [id])
-  riskMatrix            RiskMatrix?
-  missionPlanningScript MissionPlanningScript?
-  tailboards            TailboardDocument[]
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-}
-
-model RiskMatrix {
-  id           String   @id @default(uuid())
-  status       DocumentStatus @default(DRAFT)
-  content      String
-  fplMissionId String   @unique
-  fplMission   FPLMission @relation(fields: [fplMissionId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-model MissionPlanningScript {
-  id           String   @id @default(uuid())
-  status       DocumentStatus @default(DRAFT)
-  content      String
-  fplMissionId String   @unique
-  fplMission   FPLMission @relation(fields: [fplMissionId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-model TailboardDocument {
-  id           String   @id @default(uuid())
-  status       DocumentStatus @default(DRAFT)
-  content      String
-  date         DateTime
-  fplMissionId String
-  fplMission   FPLMission @relation(fields: [fplMissionId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
 }

@@ -1,33 +1,25 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { monitorRoleBasedAccess } from '../utils/monitoring';
+import { auth } from '../utils/auth';
+
+type HandlerFunction = (
+  req: NextRequest,
+  context: { params: Record<string, string> }
+) => Promise<NextResponse>;
 
 export function rbacMiddleware(
-  handler: (req: NextRequest) => Promise<NextResponse>,
+  handler: HandlerFunction,
   allowedRoles: string[]
 ) {
-  const rbacHandler = async (request: NextRequest) => {
+  const rbacHandler: HandlerFunction = async (request, context) => {
     try {
       console.log('[RBAC] Middleware started');
-      console.log('[RBAC] Request headers:', request.headers);
       
-      const userInfoHeader = request.headers.get('X-User-Info');
-      console.log('[RBAC] X-User-Info header:', userInfoHeader);
-
-      let session;
-      try {
-        session = JSON.parse(userInfoHeader || '{}');
-      } catch (error) {
-        console.error('[RBAC] Error parsing X-User-Info header:', error);
-        return new NextResponse(JSON.stringify({ error: 'Invalid user info' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      console.log('[RBAC] Parsed session:', session);
+      const session = await auth();
+      console.log('[RBAC] Session:', session);
 
       if (!session || !session.user) {
-        console.log('[RBAC] Unauthorized: No session or user');
+        console.log('[RBAC] Unauthorized: No session');
         return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
           headers: { 'Content-Type': 'application/json' },
@@ -35,6 +27,14 @@ export function rbacMiddleware(
       }
 
       const userRole = session.user.role;
+      if (!userRole) {
+        console.log('[RBAC] Unauthorized: Invalid user role');
+        return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
       console.log('[RBAC] User role:', userRole);
 
       if (!allowedRoles.includes(userRole)) {
@@ -46,7 +46,7 @@ export function rbacMiddleware(
       }
 
       console.log('[RBAC] Access granted, calling handler');
-      return await handler(request);
+      return await handler(request, context);
     } catch (error) {
       console.error('[RBAC] Error in middleware or handler:', error);
       return new NextResponse(JSON.stringify({ 
@@ -59,5 +59,5 @@ export function rbacMiddleware(
     }
   };
 
-  return monitorRoleBasedAccess(rbacHandler);
+  return rbacHandler;
 }

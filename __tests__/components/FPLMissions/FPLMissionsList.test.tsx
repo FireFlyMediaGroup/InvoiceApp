@@ -1,60 +1,115 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { FPLMissionsList } from '@/app/components/FPLMissions/List/FPLMissionsList';
-import { FPLMission } from '@/app/utils/types';
+import { getFPLMissions, createFPLMission } from '@/app/actions/fplMissions';
+import { useSession } from 'next-auth/react';
+import { toast } from 'react-hot-toast';
 
-// Mock the useSession hook
+jest.mock('@/app/actions/fplMissions', () => ({
+  getFPLMissions: jest.fn(),
+  createFPLMission: jest.fn(),
+}));
+
 jest.mock('next-auth/react', () => ({
-  useSession: jest.fn(() => ({
-    data: { user: { role: 'USER' } },
-    status: 'authenticated',
-  })),
+  useSession: jest.fn(),
+}));
+
+jest.mock('react-hot-toast', () => ({
+  toast: {
+    error: jest.fn(),
+    success: jest.fn(),
+  },
 }));
 
 describe('FPLMissionsList', () => {
-  const mockMissions: FPLMission[] = [
-    {
-      id: '1',
-      siteId: 'SITE001',
-      status: 'DRAFT',
-      userId: 'user1',
-      createdAt: new Date('2023-01-01'),
-      updatedAt: new Date('2023-01-01'),
-    },
-    {
-      id: '2',
-      siteId: 'SITE002',
-      status: 'PENDING',
-      userId: 'user2',
-      createdAt: new Date('2023-01-02'),
-      updatedAt: new Date('2023-01-02'),
-    },
+  const mockMissions = [
+    { id: '1', siteId: 'SITE001', status: 'DRAFT', createdAt: new Date('2023-01-01').toISOString() },
+    { id: '2', siteId: 'SITE002', status: 'PENDING', createdAt: new Date('2023-01-02').toISOString() },
   ];
 
-  it('renders the list of missions', () => {
-    render(<FPLMissionsList missions={mockMissions} />);
-    
-    expect(screen.getByText('FPL Missions')).toBeInTheDocument();
-    expect(screen.getByText('SITE001')).toBeInTheDocument();
-    expect(screen.getByText('SITE002')).toBeInTheDocument();
-    expect(screen.getByText('DRAFT')).toBeInTheDocument();
-    expect(screen.getByText('PENDING')).toBeInTheDocument();
+  beforeEach(() => {
+    jest.resetAllMocks();
   });
 
-  it('renders view buttons for all missions', () => {
-    render(<FPLMissionsList missions={mockMissions} />);
-    
-    const viewButtons = screen.getAllByText('View');
-    expect(viewButtons).toHaveLength(2);
+  it('renders loading state initially', () => {
+    (getFPLMissions as jest.Mock).mockReturnValue(new Promise(() => {}));
+    (useSession as jest.Mock).mockReturnValue({ data: null, status: 'loading' });
+    render(<FPLMissionsList />);
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
-  it('does not render approve buttons for USER role', () => {
-    render(<FPLMissionsList missions={mockMissions} />);
-    
-    const approveButtons = screen.queryAllByText('Approve');
-    expect(approveButtons).toHaveLength(0);
+  it('renders missions after loading for USER role', async () => {
+    (getFPLMissions as jest.Mock).mockResolvedValue(mockMissions);
+    (useSession as jest.Mock).mockReturnValue({ data: { user: { role: 'USER' } }, status: 'authenticated' });
+    render(<FPLMissionsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('SITE001')).toBeInTheDocument();
+      expect(screen.getByText('SITE002')).toBeInTheDocument();
+      expect(screen.getByText('Create New Mission')).toBeInTheDocument();
+      expect(screen.queryByText('Approve')).not.toBeInTheDocument();
+    });
   });
 
-  // Add more tests as needed, e.g., testing SUPERVISOR/ADMIN roles, empty list, etc.
+  it('renders missions after loading for ADMIN role', async () => {
+    (getFPLMissions as jest.Mock).mockResolvedValue(mockMissions);
+    (useSession as jest.Mock).mockReturnValue({ data: { user: { role: 'ADMIN' } }, status: 'authenticated' });
+    render(<FPLMissionsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('SITE001')).toBeInTheDocument();
+      expect(screen.getByText('SITE002')).toBeInTheDocument();
+      expect(screen.getByText('Create New Mission')).toBeInTheDocument();
+      expect(screen.getByText('Approve')).toBeInTheDocument();
+    });
+  });
+
+  it('handles error state', async () => {
+    const errorMessage = 'Failed to fetch missions';
+    (getFPLMissions as jest.Mock).mockRejectedValue(new Error(errorMessage));
+    (useSession as jest.Mock).mockReturnValue({ data: { user: { role: 'USER' } }, status: 'authenticated' });
+    render(<FPLMissionsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText(`Error: ${errorMessage}`)).toBeInTheDocument();
+      expect(toast.error).toHaveBeenCalledWith(`Failed to fetch missions: ${errorMessage}`);
+    });
+  });
+
+  it('creates a new mission', async () => {
+    const newMission = { id: '3', siteId: 'New Site', status: 'DRAFT', createdAt: new Date().toISOString() };
+    (getFPLMissions as jest.Mock).mockResolvedValue(mockMissions);
+    (createFPLMission as jest.Mock).mockResolvedValue(newMission);
+    (useSession as jest.Mock).mockReturnValue({ data: { user: { role: 'USER' } }, status: 'authenticated' });
+
+    render(<FPLMissionsList />);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText('Create New Mission'));
+    });
+
+    await waitFor(() => {
+      expect(createFPLMission).toHaveBeenCalledWith({ siteId: 'New Site', status: 'DRAFT' });
+      expect(screen.getByText('New Site')).toBeInTheDocument();
+      expect(toast.success).toHaveBeenCalledWith('New mission created successfully');
+    });
+  });
+
+  it('handles error when creating a new mission', async () => {
+    const errorMessage = 'Failed to create mission';
+    (getFPLMissions as jest.Mock).mockResolvedValue(mockMissions);
+    (createFPLMission as jest.Mock).mockRejectedValue(new Error(errorMessage));
+    (useSession as jest.Mock).mockReturnValue({ data: { user: { role: 'USER' } }, status: 'authenticated' });
+
+    render(<FPLMissionsList />);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText('Create New Mission'));
+    });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(`Failed to create new mission: ${errorMessage}`);
+    });
+  });
 });

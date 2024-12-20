@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '../../components/ui/button';
+import { Button } from '../components/ui/button';
 import {
   Card,
   CardContent,
@@ -8,7 +8,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../../components/ui/card';
+} from '../components/ui/card';
 
 interface ErrorBoundaryProps {
   error: Error & { digest?: string };
@@ -45,7 +45,7 @@ export default function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
           <CardContent className="flex flex-col gap-y-4">
             <div className="text-sm text-red-500">{error.message}</div>
             <div className="flex flex-col gap-3">
-              <Button onClick={reset} variant="default" className="w-full">
+              <Button onClick={reset} variant="primary" className="w-full">
                 Try Again
               </Button>
               <Button

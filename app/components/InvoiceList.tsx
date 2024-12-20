@@ -7,51 +7,14 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table';
-import type { Prisma } from '@prisma/client';
-import prisma from '../utils/db';
 import { formatCurrency } from '../utils/formatCurrency';
-import { requireUser } from '../utils/hooks';
 import { EmptyState } from './EmptyState';
 import { InvoiceActions } from './InvoiceActions';
 import type { Currency } from '../utils/types';
-
-type InvoiceData = Prisma.InvoiceGetPayload<{
-  select: {
-    id: true;
-    clientName: true;
-    total: true;
-    createdAt: true;
-    status: true;
-    invoiceNumber: true;
-    currency: true;
-  };
-}>;
-
-async function getData(userId: string): Promise<InvoiceData[]> {
-  const data = await prisma.invoice.findMany({
-    where: {
-      userId: userId,
-    },
-    select: {
-      id: true,
-      clientName: true,
-      total: true,
-      createdAt: true,
-      status: true,
-      invoiceNumber: true,
-      currency: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-
-  return data;
-}
+import { getInvoices } from '../actions/getInvoices';
 
 export async function InvoiceList() {
-  const session = await requireUser();
-  const data = await getData(session.user?.id as string);
+  const data = await getInvoices();
   return (
     <>
       {data.length === 0 ? (

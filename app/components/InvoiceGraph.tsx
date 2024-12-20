@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -5,62 +8,44 @@ import {
   CardHeader,
   CardTitle,
 } from '../../components/ui/card';
-import prisma from '../utils/db';
-import { requireUser } from '../utils/hooks';
 import { Graph } from './Graph';
 
-async function getInvoices(userId: string) {
-  const rawData = await prisma.invoice.findMany({
-    where: {
-      status: 'PAID',
-      userId: userId,
-      createdAt: {
-        lte: new Date(),
-        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      },
-    },
-    select: {
-      createdAt: true,
-      total: true,
-    },
-    orderBy: {
-      createdAt: 'asc',
-    },
-  });
+type InvoiceData = {
+  date: string;
+  amount: number;
+};
 
-  //Group and aggregate data by date
-  const aggregatedData = rawData.reduce(
-    (acc: { [key: string]: number }, curr) => {
-      const date = new Date(curr.createdAt).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      });
+export function InvoiceGraph() {
+  const [data, setData] = useState<InvoiceData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-      acc[date] = (acc[date] || 0) + curr.total;
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await fetch('/api/invoices/graph-data');
+        if (!response.ok) {
+          throw new Error('Failed to fetch data');
+        }
+        const jsonData = await response.json();
+        setData(jsonData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    }
 
-      return acc;
-    },
-    {}
-  );
-  //Convert to array and from the object
-  const transformedData = Object.entries(aggregatedData)
-    .map(([date, amount]) => ({
-      date,
-      amount,
-      originalDate: new Date(`${date}, ${new Date().getFullYear()}`),
-    }))
-    .sort((a, b) => a.originalDate.getTime() - b.originalDate.getTime())
-    .map(({ date, amount }) => ({
-      date,
-      amount,
-    }));
+    fetchData();
+  }, []);
 
-  return transformedData;
-}
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
-export async function InvoiceGraph() {
-  const session = await requireUser();
-  const data = await getInvoices(session.user?.id as string);
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <Card className="lg:col-span-2 h-full flex flex-col">

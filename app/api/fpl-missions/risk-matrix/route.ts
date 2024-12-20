@@ -1,42 +1,8 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/app/utils/db';
-import { auth } from '@/app/utils/auth';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../../utils/db';
+import { rbacMiddleware } from '../../../middleware/rbac';
 
-interface RiskMatrix {
-  id: string;
-  status: string;
-  content: string;
-  fplMissionId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface RiskMatrixFindUniqueArgs {
-  where: {
-    fplMissionId: string;
-  };
-}
-
-interface RiskMatrixCreateArgs {
-  data: Partial<RiskMatrix>;
-}
-
-type PrismaClientWithRiskMatrix = PrismaClient & {
-  riskMatrix: {
-    // eslint-disable-next-line no-unused-vars
-    findUnique: (args: RiskMatrixFindUniqueArgs) => Promise<RiskMatrix | null>;
-    // eslint-disable-next-line no-unused-vars
-    create: (args: RiskMatrixCreateArgs) => Promise<RiskMatrix>;
-  };
-};
-
-export async function GET(request: Request) {
-  const session = await auth();
-  if (!session || !session.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+async function handleGET(request: Request) {
   const { searchParams } = new URL(request.url);
   const missionId = searchParams.get('missionId');
 
@@ -45,7 +11,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const riskMatrix = await (prisma as PrismaClientWithRiskMatrix).riskMatrix.findUnique({
+    const riskMatrix = await prisma.riskMatrix.findUnique({
       where: {
         fplMissionId: missionId,
       },
@@ -62,23 +28,37 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
-  const session = await auth();
-  if (!session || !session.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+async function handlePOST(request: Request) {
   try {
     const { content, fplMissionId } = await request.json();
-    const newRiskMatrix = await (prisma as PrismaClientWithRiskMatrix).riskMatrix.create({
+    const newRiskMatrix = await prisma.riskMatrix.create({
       data: {
         content,
         fplMissionId,
+        status: 'DRAFT',
       },
     });
-    return NextResponse.json(newRiskMatrix);
+    return NextResponse.json(newRiskMatrix, { status: 201 });
   } catch (error) {
     console.error('Error creating Risk Matrix:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+async function handlePUT(request: Request) {
+  try {
+    const { id, content, status } = await request.json();
+    const updatedRiskMatrix = await prisma.riskMatrix.update({
+      where: { id },
+      data: { content, status },
+    });
+    return NextResponse.json(updatedRiskMatrix);
+  } catch (error) {
+    console.error('Error updating Risk Matrix:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export const GET = rbacMiddleware(handleGET, ['USER', 'SUPERVISOR', 'ADMIN']);
+export const POST = rbacMiddleware(handlePOST, ['USER', 'SUPERVISOR', 'ADMIN']);
+export const PUT = rbacMiddleware(handlePUT, ['USER', 'SUPERVISOR', 'ADMIN']);

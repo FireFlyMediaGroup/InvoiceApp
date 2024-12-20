@@ -1,45 +1,73 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, DocumentStatus } from '@prisma/client'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
-  const chris = await prisma.user.upsert({
-    where: { email: 'chris.odom@skyspecs.com' },
-    update: {
-      role: 'ADMIN'
+  const sampleFPLMission = await prisma.fPLMission.create({
+    data: {
+      siteId: 'SITE001',
+      status: DocumentStatus.DRAFT,
+      user: {
+        create: {
+          email: 'user@example.com',
+          firstName: 'John',
+          lastName: 'Doe',
+          role: 'USER',
+        },
+      },
     },
-    create: {
-      email: 'chris.odom@skyspecs.com',
-      firstName: 'Chris',
-      lastName: 'Odom',
-      isAllowed: true,
-      role: 'ADMIN'
-    },
-  });
+  })
 
-  const bob = await prisma.user.upsert({
-    where: { email: 'bob@example.com' },
-    update: {
-      role: 'USER'
+  const tailboardDocuments = [
+    {
+      status: DocumentStatus.DRAFT,
+      content: {
+        pilotName: 'John Doe',
+        site: 'Site A',
+        tailboardReview: 'Review for Site A',
+        preFlightBriefing: 'Briefing for Site A',
+        rulesReview: 'Rules for Site A',
+        flightPlanReview: 'Flight plan for Site A',
+        signature: 'John Doe',
+      },
+      date: new Date(),
+      fplMissionId: sampleFPLMission.id,
+      createdById: sampleFPLMission.userId,
     },
-    create: {
-      email: 'bob@example.com',
-      firstName: 'Bob',
-      lastName: 'Smith',
-      isAllowed: true,
-      role: 'USER'
+    {
+      status: DocumentStatus.PENDING,
+      content: {
+        pilotName: 'Jane Smith',
+        site: 'Site B',
+        tailboardReview: 'Review for Site B',
+        preFlightBriefing: 'Briefing for Site B',
+        rulesReview: 'Rules for Site B',
+        flightPlanReview: 'Flight plan for Site B',
+        signature: 'Jane Smith',
+      },
+      date: new Date(),
+      fplMissionId: sampleFPLMission.id,
+      createdById: sampleFPLMission.userId,
     },
-  });
+  ]
 
-  console.log({ chris, bob });
+  for (const doc of tailboardDocuments) {
+    await prisma.tailboardDocument.create({
+      data: {
+        ...doc,
+        content: JSON.stringify(doc.content),
+      },
+    })
+  }
+
+  console.log('Seed data inserted successfully')
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect();
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
   })
-  .catch(async (e) => {
-    console.error(e);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+  .finally(async () => {
+    await prisma.$disconnect()
+  })

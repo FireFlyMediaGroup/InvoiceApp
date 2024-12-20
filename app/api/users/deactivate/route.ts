@@ -13,7 +13,7 @@ function logUserAction(action: string, details: LogDetails) {
   // TODO: Implement more sophisticated logging (e.g., to a database or external logging service)
 }
 
-async function handleDEACTIVATE(request: NextRequest) {
+async function handleDEACTIVATE(request: NextRequest): Promise<NextResponse> {
   const body = await request.json();
   const { email } = body;
 
@@ -56,5 +56,7 @@ async function handleDEACTIVATE(request: NextRequest) {
   }
 }
 
-export const PATCH = (request: NextRequest) =>
-  rbacMiddleware(request, () => handleDEACTIVATE(request), ['ADMIN']);
+export const PATCH = rbacMiddleware(
+  async (request: NextRequest) => handleDEACTIVATE(request),
+  ['ADMIN']
+);

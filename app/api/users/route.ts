@@ -17,7 +17,7 @@ function logUserAction(action: string, details: LogDetails) {
   // TODO: Implement more sophisticated logging (e.g., to a database or external logging service)
 }
 
-export async function handlePOST(request: NextRequest) {
+async function handlePOST(request: NextRequest): Promise<NextResponse> {
   const body = await request.json();
   const { email, role, firstName, lastName } = body;
 
@@ -58,7 +58,7 @@ export async function handlePOST(request: NextRequest) {
   }
 }
 
-async function handlePUT(request: NextRequest) {
+async function handlePUT(request: NextRequest): Promise<NextResponse> {
   const body = await request.json();
   const { email, newRole } = body;
 
@@ -105,7 +105,7 @@ async function handlePUT(request: NextRequest) {
   }
 }
 
-async function handleDEACTIVATE(request: NextRequest) {
+async function handleDEACTIVATE(request: NextRequest): Promise<NextResponse> {
   const url = new URL(request.url);
   const id = url.searchParams.get('id');
 
@@ -148,11 +148,17 @@ async function handleDEACTIVATE(request: NextRequest) {
   }
 }
 
-export const POST = (request: NextRequest) =>
-  rbacMiddleware(request, () => handlePOST(request), ['ADMIN']);
+export const POST = rbacMiddleware(
+  async (request: NextRequest) => handlePOST(request),
+  ['ADMIN']
+);
 
-export const PUT = (request: NextRequest) =>
-  rbacMiddleware(request, () => handlePUT(request), ['ADMIN']);
+export const PUT = rbacMiddleware(
+  async (request: NextRequest) => handlePUT(request),
+  ['ADMIN']
+);
 
-export const PATCH = (request: NextRequest) =>
-  rbacMiddleware(request, () => handleDEACTIVATE(request), ['ADMIN']);
+export const PATCH = rbacMiddleware(
+  async (request: NextRequest) => handleDEACTIVATE(request),
+  ['ADMIN']
+);

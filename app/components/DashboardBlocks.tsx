@@ -1,53 +1,23 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Activity, CreditCard, DollarSign, Users } from 'lucide-react';
-import prisma from '../utils/db';
 import { formatCurrency } from '../utils/formatCurrency';
-import { requireUser } from '../utils/hooks';
 
-async function getData(userId: string) {
-  const [data, openInvoices, paidinvoices] = await Promise.all([
-    prisma.invoice.findMany({
-      where: {
-        userId: userId,
-      },
-      select: {
-        total: true,
-      },
-    }),
-    prisma.invoice.findMany({
-      where: {
-        userId: userId,
-        status: 'PENDING',
-      },
-      select: {
-        id: true,
-      },
-    }),
-
-    prisma.invoice.findMany({
-      where: {
-        userId: userId,
-        status: 'PAID',
-      },
-      select: {
-        id: true,
-      },
-    }),
-  ]);
-
-  return {
-    data,
-    openInvoices,
-    paidinvoices,
-  };
+interface Invoice {
+  id: string;
+  total: number;
+  status: 'PENDING' | 'PAID';
 }
 
-export async function DashboardBlocks() {
-  const session = await requireUser();
-  const { data, openInvoices, paidinvoices } = await getData(
-    session.user?.id as string
-  );
+interface DashboardBlocksProps {
+  data: Invoice[];
+  openInvoices: Invoice[];
+  paidinvoices: Invoice[];
+  totalRevenue: number;
+}
 
+export function DashboardBlocks({ data, openInvoices, paidinvoices, totalRevenue }: DashboardBlocksProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 md:gap-8">
       <Card>
@@ -58,7 +28,7 @@ export async function DashboardBlocks() {
         <CardContent>
           <h2 className="text-2xl font-bold">
             {formatCurrency({
-              amount: data.reduce((acc, invoice) => acc + invoice.total, 0),
+              amount: totalRevenue,
               currency: 'USD',
             })}
           </h2>
@@ -74,7 +44,7 @@ export async function DashboardBlocks() {
         </CardHeader>
         <CardContent>
           <h2 className="text-2xl font-bold">+{data.length}</h2>
-          <p className="text-xs text-muted-foreground">Total Invoices Isued!</p>
+          <p className="text-xs text-muted-foreground">Total Invoices Issued!</p>
         </CardContent>
       </Card>
       <Card>

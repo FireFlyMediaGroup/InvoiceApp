@@ -1,0 +1,47 @@
+strict digraph "dependency-cruiser output"{
+    rankdir="LR" splines="true" overlap="false" nodesep="0.16" ranksep="0.18" fontname="Helvetica-bold" fontsize="9" style="rounded,bold,filled" fillcolor="#ffffff" compound="true"
+    node [shape="box" style="rounded, filled" height="0.2" color="black" fillcolor="#ffffcc" fontcolor="black" fontname="Helvetica" fontsize="9"]
+    edge [arrowhead="normal" arrowsize="0.6" penwidth="2.0" color="#00000033" fontname="Helvetica" fontsize="9"]
+
+    subgraph "cluster_app" {label="app" "app/SessionProviderWrapper.tsx" [label=<SessionProviderWrapper.tsx> tooltip="SessionProviderWrapper.tsx" URL="app/SessionProviderWrapper.tsx" fillcolor="#bbfeff"] }
+    subgraph "cluster_app" {label="app" "app/actions" [label=<actions> tooltip="actions" URL="app/actions" shape="box3d"] }
+    "app/actions" -> "app/utils" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_app" {label="app" "app/actions.ts" [label=<actions.ts> tooltip="actions.ts" URL="app/actions.ts" fillcolor="#ddfeff"] }
+    "app/actions.ts" -> "app/utils"
+    subgraph "cluster_app" {label="app" "app/api" [label=<api> tooltip="no-orphans" URL="app/api" fontcolor="orange" color="orange" shape="box3d"] }
+    "app/api" -> "app/utils"
+    "app/api" -> "app/middleware"
+    subgraph "cluster_app" {label="app" "app/check-email" [label=<check-email> tooltip="no-orphans" URL="app/check-email" fillcolor="#ccffcc" fontcolor="orange" color="orange" shape="box3d"] }
+    subgraph "cluster_app" {label="app" "app/components" [label=<components> tooltip="no-orphans" URL="app/components" fontcolor="orange" color="orange" shape="box3d"] }
+    "app/components" -> "lib/utils.ts"
+    "app/components" -> "app/actions.ts"
+    "app/components" -> "app/utils"
+    "app/components" -> "app/actions"
+    subgraph "cluster_app" {label="app" "app/dashboard" [label=<dashboard> tooltip="no-orphans" URL="app/dashboard" fontcolor="orange" color="orange" shape="box3d"] }
+    "app/dashboard" -> "app/actions"
+    "app/dashboard" -> "app/components"
+    "app/dashboard" -> "app/utils" [arrowhead="onormal" penwidth="1.0"]
+    "app/dashboard" -> "app/actions.ts"
+    subgraph "cluster_app" {label="app" "app/globals.css" [label=<globals.css> tooltip="globals.css" URL="app/globals.css" ] }
+    subgraph "cluster_app" {label="app" "app/hooks" [label=<hooks> tooltip="no-orphans" URL="app/hooks" fillcolor="#ccffcc" fontcolor="orange" color="orange" shape="box3d"] }
+    subgraph "cluster_app" {label="app" "app/layout.tsx" [label=<layout.tsx> tooltip="layout.tsx" URL="app/layout.tsx" fillcolor="#bbfeff"] }
+    "app/layout.tsx" -> "app/globals.css"
+    "app/layout.tsx" -> "app/SessionProviderWrapper.tsx"
+    subgraph "cluster_app" {label="app" "app/lib" [label=<lib> tooltip="lib" URL="app/lib" shape="box3d"] }
+    "app/lib" -> "app/utils"
+    subgraph "cluster_app" {label="app" "app/login" [label=<login> tooltip="login" URL="app/login" shape="box3d"] }
+    "app/login" -> "app/components"
+    "app/login" -> "app/utils"
+    subgraph "cluster_app" {label="app" "app/middleware" [label=<middleware> tooltip="middleware" URL="app/middleware" shape="box3d"] }
+    "app/middleware" -> "app/utils"
+    subgraph "cluster_app" {label="app" "app/onboarding" [label=<onboarding> tooltip="onboarding" URL="app/onboarding" shape="box3d"] }
+    "app/onboarding" -> "app/actions.ts"
+    "app/onboarding" -> "app/components"
+    "app/onboarding" -> "app/utils"
+    subgraph "cluster_app" {label="app" "app/page.tsx" [label=<page.tsx> tooltip="page.tsx" URL="app/page.tsx" fillcolor="#bbfeff"] }
+    "app/page.tsx" -> "app/components"
+    subgraph "cluster_app" {label="app" "app/unauthorized" [label=<unauthorized> tooltip="no-orphans" URL="app/unauthorized" fillcolor="#ccffcc" fontcolor="orange" color="orange" shape="box3d"] }
+    subgraph "cluster_app" {label="app" "app/utils" [label=<utils> tooltip="utils" URL="app/utils" shape="box3d"] }
+    subgraph "cluster_app" {label="app" "app/verify" [label=<verify> tooltip="no-orphans" URL="app/verify" fillcolor="#ccffcc" fontcolor="orange" color="orange" shape="box3d"] }
+    subgraph "cluster_lib" {label="lib" "lib/utils.ts" [label=<utils.ts> tooltip="utils.ts" URL="lib/utils.ts" fillcolor="#ddfeff"] }
+}

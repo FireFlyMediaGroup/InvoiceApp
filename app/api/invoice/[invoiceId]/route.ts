@@ -1,21 +1,18 @@
-import prisma from '@/app/utils/db';
-import { formatCurrency } from '@/app/utils/formatCurrency';
+import prisma from '../../../utils/db';
+import { formatCurrency } from '../../../utils/formatCurrency';
 import jsPDF from 'jspdf';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { rbacMiddleware } from '@/app/middleware/rbac';
+import { rbacMiddleware } from '../../../middleware/rbac';
 
 type Currency = 'USD' | 'EUR' | 'GBP'; // Add more currencies as needed
 
-async function getInvoice(
-  request: NextRequest,
-  {
-    params,
-  }: {
-    params: { invoiceId: string };
+async function getInvoice(request: NextRequest): Promise<NextResponse> {
+  const invoiceId = request.nextUrl.pathname.split('/').pop();
+
+  if (!invoiceId) {
+    return NextResponse.json({ error: 'Invalid invoice ID' }, { status: 400 });
   }
-) {
-  const { invoiceId } = params;
 
   const data = await prisma.invoice.findUnique({
     where: {
@@ -141,5 +138,7 @@ async function getInvoice(
   });
 }
 
-export const GET = (request: NextRequest, context: { params: { invoiceId: string } }) => 
-  rbacMiddleware(request, () => getInvoice(request, context), ['USER', 'SUPERVISOR', 'ADMIN']);
+export const GET = rbacMiddleware(
+  async (request: NextRequest) => getInvoice(request),
+  ['USER', 'SUPERVISOR', 'ADMIN']
+);
